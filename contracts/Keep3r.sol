@@ -507,6 +507,7 @@ contract Keep3r {
 
     /// @notice governance address for the governance contract
     address public governance;
+    address public pendingGovernance;
 
     /// @notice the liquidity token supplied by users paying for jobs
     UniswapPair public liquidity;
@@ -663,7 +664,12 @@ contract Keep3r {
      */
     function setGovernance(address _governance) external {
         require(msg.sender == governance, "Keep3r::setGovernance: only governance can set");
-        governance = _governance;
+        pendingGovernance = _governance;
+    }
+
+    function acceptGovernance() external {
+        require(msg.sender == pendingGovernance, "Keep3r::acceptGovernance: only pendingGovernance can accept");
+        governance = pendingGovernance;
     }
 
     /**
@@ -753,7 +759,7 @@ contract Keep3r {
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
         bonds[keeper] = bonds[keeper].sub(_slash);
-        _mint(msg.sender, 1e18);
+        _mint(msg.sender, _slash);
         lastJob[keeper] = now;
         emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
     }
