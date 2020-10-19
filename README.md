@@ -63,5 +63,5 @@ The Keeper can call ```claim()``` on the Keep3r contract to receive all pending 
 
 ## Beta Addresses
 
-Keep3r [0x30f3581Ef6469334c8752d9B6ca3FB39c72f57F1](https://etherscan.io/address/0x30f3581ef6469334c8752d9b6ca3fb39c72f57f1#code)  
+Keep3r [0x9696Fea1121C938C861b94FcBEe98D971de54B32](https://etherscan.io/address/0x9696fea1121c938c861b94fcbee98d971de54b32)  
 Governance [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9)  
