@@ -4,7 +4,7 @@
 These docs are in active development by the Keep3r community.
 {% endhint %}
 
-Keep3r Network is a decentralized keeper network for project that need external devops and for external teams to find keeper jobs
+Keep3r Network is a decentralized keeper network for projects that need external devops and for external teams to find keeper jobs
 
 ## Keepers
 
