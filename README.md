@@ -16,7 +16,7 @@ A Job is the term used to refer to a smart contract that wishes an external enti
 
 ### Becoming a Keeper
 
-To join as a Keeper you call bond(uint) on the Keep3r contract. You do not need to have KPR tokens to join as a Keeper, so you can join with bond(0). There is a 3 day bonding delay before you can activate as a Keeper. Once the 3 days have passed, you can call activate(). Once activated you lastJob timestamp will be set to the current block timestamp.
+To join as a Keeper you call ```bond(uint)``` on the Keep3r contract. You do not need to have KPR tokens to join as a Keeper, so you can join with ```bond(0)```. There is a 3 day bonding delay before you can activate as a Keeper. Once the 3 days have passed, you can call ```activate()```. Once activated you lastJob timestamp will be set to the current block timestamp.
 
 ### Registering a Job
 
@@ -28,25 +28,26 @@ If you prefer, you can register as a job by simply submitting a proposal via Gov
 
 #### Registering a Job via Contract Interface
 
-You can register as a job by calling submitJob(address,uint) on the Keep3r contract. You must not have any current active jobs associated with this account. Calling submitJob will create a pending Governance vote for the job specified by address in the function arguments. You are limited to submit a new job request via this address every 14 days.
+You can register as a job by calling ```submitJob(address,uint)``` on the Keep3r contract. You must not have any current active jobs associated with this account. Calling submitJob will create a pending Governance vote for the job specified by address in the function arguments. You are limited to submit a new job request via this address every 14 days.
 
 ## Job Interface
 
-Some contracts require external event execution, an example for this is the harvest() function in the yearn ecosystem, or the update(address,address) function in the yoracle ecosystem. These normally require a restricted access control list, however these can be difficult for fully decentralized projects to manage, as they lack devops infrastructure.
+Some contracts require external event execution, an example for this is the ```harvest()``` function in the yearn ecosystem, or the ```update(address,address)``` function in the uniquote ecosystem. These normally require a restricted access control list, however these can be difficult for fully decentralized projects to manage, as they lack devops infrastructure.
 
-These interfaces can be broken down into two types, no risk delta (something like update(address,address) in yoracle, which needs to be executed, but not risk to execution), and harvest() in yearn, which can be exploited by malicious actors by front-running deposits.
+These interfaces can be broken down into two types, no risk delta (something like ```update(address,address)``` in uniquote, which needs to be executed, but not risk to execution), and ```harvest()``` in yearn, which can be exploited by malicious actors by front-running deposits.
 
-For no, or low risk executions, you can simply call Keep3r.isKeeper(msg.sender) which will let you know if the given actor is a keeper in the network.
+For no, or low risk executions, you can simply call ```Keep3r.isKeeper(msg.sender)``` which will let you know if the given actor is a keeper in the network.
 
 For high, sensitive, or critical risk executions, you can specify a minimum bond, minimum jobs completed, and minimum Keeper age required to execute this function. Based on these 3 limits you can define your own trust ratio on these keepers.
 
 So a function definition would look as follows;
-
+```
 function execute() external {
   requires(Keep3r.isKeeper(msg.sender), "Keep3r not allowed");
 }
+```
 
-At the end of the call, you simply need to call workReceipt(address,uint) to finalize the execution for the keeper network. In the call you specify the keeper being rewarded, and the amount of KPR you would like to award them with. This is variable based on what you deem is a fair reward for the work executed.
+At the end of the call, you simply need to call ```workReceipt(address,uint)``` to finalize the execution for the keeper network. In the call you specify the keeper being rewarded, and the amount of KPR you would like to award them with. This is variable based on what you deem is a fair reward for the work executed.
 
 ### Job Credits
 
@@ -54,8 +55,8 @@ As mentioned in Job Interface, a job has a set amount of credits that they can a
 
 You can remove your liquidity at any time, so you do not have to keep buying new credits. Your liquidity provided is never reduced and as such you can remove it whenever you no longer would like a job to be executed.
 
-To add credits, you simply need to have KPR-WETH LP tokens, you then call submitJob(address,uint) specifying the job in the address and the amount in the uint. This will then transfer your LP tokens to the contract and keep them in escrow. You can remove your liquidity at any time by calling unbondJob(), this will allow you to remove the liquidity after 14 days by calling removeJob()
+To add credits, you simply need to have KPR-WETH LP tokens, you then call ```submitJob(address,uint)``` specifying the job in the address and the amount in the uint. This will then transfer your LP tokens to the contract and keep them in escrow. You can remove your liquidity at any time by calling ```unbondJob()```, this will allow you to remove the liquidity after 14 days by calling ```removeJob()```
 
 ## Keeper Rewards
 
-The Keeper can call claim() on the Keep3r contract to receive all pending rewards for executing keeper jobs.
+The Keeper can call ```claim()``` on the Keep3r contract to receive all pending rewards for executing keeper jobs.
