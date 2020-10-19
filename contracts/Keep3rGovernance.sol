@@ -205,11 +205,11 @@ contract Governance {
     }
 
     function quorumVotes() public view returns (uint) {
-        return VOTER.totalSupply().mul(_quorumVotes).div(BASE);
+        return VOTER.totalBonded().mul(_quorumVotes).div(BASE);
     }
 
     function proposalThreshold() public view returns (uint) {
-        return VOTER.totalSupply().mul(_proposalThreshold).div(BASE);
+        return VOTER.totalBonded().mul(_proposalThreshold).div(BASE);
     }
 
     function setThreshold(uint threshold_) external {
@@ -582,5 +582,5 @@ contract Governance {
 
 interface DelegateInterface {
     function getPriorVotes(address account, uint blockNumber) external view returns (uint);
-    function totalSupply() external view returns (uint);
+    function totalBonded() external view returns (uint);
 }
