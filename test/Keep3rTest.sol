@@ -52,13 +52,6 @@ interface Keep3rLike {
    function setup() external payable;
    function balanceOf(address) external view returns (uint);
    function liquidity() external view returns (address);
-
-   function bond(uint) external;
-   function activate() external;
-   function unbond() external;
-   function withdraw() external;
-
-   function isKeeper(address) external view returns (bool);
 }
 
 contract Keep3rTest is script {
@@ -68,39 +61,11 @@ contract Keep3rTest is script {
 
 	function run() public {
 	    run(this.init).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
-	    run(this.bond).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
-	    advanceBlocks(3 days);
-	    run(this.activate).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
-	    run(this.unbond).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
-	    advanceBlocks(14 days);
-	    run(this.withdraw).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
 	}
 
     function init() external {
         fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
         KPR.setup.value(1e18)();
         fmt.printf("liquidity=%a\n",abi.encode(KPR.liquidity()));
-    }
-
-    function bond() external {
-        fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
-        KPR.bond(KPR.balanceOf(address(this)));
-        fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
-    }
-
-    function activate() external {
-        KPR.activate();
-        fmt.printf("isKeeper=%b\n",abi.encode(KPR.isKeeper(address(this))));
-    }
-
-    function unbond() external {
-        KPR.unbond();
-        fmt.printf("isKeeper=%b\n",abi.encode(KPR.isKeeper(address(this))));
-    }
-
-    function withdraw() external {
-        fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
-        KPR.withdraw();
-        fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
     }
 }
