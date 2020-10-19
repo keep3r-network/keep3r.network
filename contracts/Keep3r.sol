@@ -469,6 +469,9 @@ contract Keep3r {
     mapping(address => uint) public pendingbonds;
     /// @notice tracks how much a keeper has bonded
     mapping(address => uint) public bonds;
+
+    /// @notice total bonded (totalSupply for bonds)
+    uint public totalBonded = 0;
     /// @notice tracks when a keeper was first registered
     mapping(address => uint) public firstSeen;
 
@@ -707,6 +710,7 @@ contract Keep3r {
           firstSeen[msg.sender] = now;
         }
         keepers[msg.sender] = true;
+        totalBonded = totalBonded.add(pendingbonds[msg.sender]);
         bonds[msg.sender] = bonds[msg.sender].add(pendingbonds[msg.sender]);
         pendingbonds[msg.sender] = 0;
         if (lastJob[msg.sender] == 0) {
@@ -722,6 +726,7 @@ contract Keep3r {
     function unbond() external {
         keepers[msg.sender] = false;
         unbondings[msg.sender] = now.add(UNBOND);
+        totalBonded = totalBonded.sub(bonds[msg.sender]);
         _moveDelegates(delegates[msg.sender], address(0), bonds[msg.sender]);
         emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender], bonds[msg.sender]);
     }
