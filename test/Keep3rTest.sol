@@ -57,8 +57,17 @@ interface Keep3rLike {
    function activate() external;
    function unbond() external;
    function withdraw() external;
+   function claim() external;
 
    function isKeeper(address) external view returns (bool);
+
+   function addJob(address) external;
+   function removeJob(address) external;
+   function jobs(address) external view returns (bool);
+
+   function workReceipt(address,uint) external;
+
+   function submitJob(address,uint) external;
 }
 
 contract Keep3rTest is script {
@@ -74,6 +83,29 @@ contract Keep3rTest is script {
 	    run(this.unbond).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
 	    advanceBlocks(14 days);
 	    run(this.withdraw).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
+	    run(this.manageJobs).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
+	    run(this.submitJob).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
+	    run(this.work).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
+	    run(this.claim).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
+	}
+
+	function submitJob() external {
+        fmt.printf("liquidity=%.18u\n",abi.encode(ERC20Like(KPR.liquidity()).balanceOf(address(this))));
+	    ERC20Like(KPR.liquidity()).approve(address(KPR), uint(-1));
+	    KPR.submitJob(address(this), ERC20Like(KPR.liquidity()).balanceOf(address(this)));
+        fmt.printf("liquidity=%.18u\n",abi.encode(ERC20Like(KPR.liquidity()).balanceOf(address(this))));
+	}
+
+	function work() external {
+	    KPR.workReceipt(address(this), 1e18);
+	}
+
+	function manageJobs() external {
+	    KPR.addJob(address(this));
+	    KPR.removeJob(address(this));
+        fmt.printf("isJob=%b\n",abi.encode(KPR.jobs(address(this))));
+	    KPR.addJob(address(this));
+        fmt.printf("isJob=%b\n",abi.encode(KPR.jobs(address(this))));
 	}
 
     function init() external {
@@ -101,6 +133,12 @@ contract Keep3rTest is script {
     function withdraw() external {
         fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
         KPR.withdraw();
+        fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
+    }
+
+    function claim() external {
+        fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
+        KPR.claim();
         fmt.printf("balanceOf=%.18u\n",abi.encode(KPR.balanceOf(address(this))));
     }
 }
