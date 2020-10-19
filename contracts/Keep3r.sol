@@ -749,6 +749,7 @@ contract Keep3r {
      * @param keeper the address being slashed
      */
     function down(address keeper) external {
+        require(keepers[keeper], "Keep3r::down: keeper not registered");
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
         bonds[keeper] = bonds[keeper].sub(_slash);
