@@ -222,8 +222,15 @@ interface Factory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
 }
 
+interface Keep3rHelper {
+    function getQuoteLimit(uint gasUsed) external view returns (uint);
+}
+
 contract Keep3r {
     using SafeMath for uint;
+
+    /// @notice Keep3r Helper to set max prices for the ecosystem
+    Keep3rHelper public KPRH;
 
     /// @notice WETH address to liquidity into UNI
     WETH9 public constant WETH = WETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
@@ -516,6 +523,8 @@ contract Keep3r {
     /// @notice the liquidity token supplied by users paying for jobs
     UniswapPair public liquidity;
 
+    uint internal gasUsed;
+
     constructor() public {
         // Set governance for this token
         governance = msg.sender;
@@ -631,6 +640,8 @@ contract Keep3r {
      */
     function workReceipt(address keeper, uint amount) external {
         require(jobs[msg.sender], "Keep3r::workReceipt: only jobs can approve work");
+        gasUsed = gasUsed.sub(gasleft());
+        require(amount < KPRH.getQuoteLimit(gasUsed), "Keep3r::workReceipt: spending over max limit");
         lastJob[keeper] = now;
         credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
         bonds[keeper] = bonds[keeper].add(amount);
@@ -660,6 +671,15 @@ contract Keep3r {
     }
 
     /**
+     * @notice Allows governance to change the Keep3rHelper for max spend
+     * @param _kprh new helper address to set
+     */
+    function setKeep3rHelper(Keep3rHelper _kprh) external {
+        require(msg.sender == governance, "Keep3r::setKeep3rHelper: only governance can set");
+        KPRH = _kprh;
+    }
+
+    /**
      * @notice Allows governance to change governance (for future upgradability)
      * @param _governance new governance address to set
      */
@@ -680,7 +700,8 @@ contract Keep3r {
      * @notice confirms if the current keeper is registered, can be used for general (non critical) functions
      * @return true/false if the address is a keeper
      */
-    function isKeeper(address keeper) external view returns (bool) {
+    function isKeeper(address keeper) external returns (bool) {
+        gasUsed = gasleft();
         return keepers[keeper];
     }
 
@@ -688,7 +709,8 @@ contract Keep3r {
      * @notice confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
      * @return true/false if the address is a keeper and has more than the bond
      */
-    function isMinKeeper(address keeper, uint minBond, uint completed, uint age) external view returns (bool) {
+    function isMinKeeper(address keeper, uint minBond, uint completed, uint age) external returns (bool) {
+        gasUsed = gasleft();
         return keepers[keeper]
                 && bonds[keeper] >= minBond
                 && workCompleted[keeper] > completed
