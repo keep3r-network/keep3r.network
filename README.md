@@ -83,7 +83,7 @@ To add credits, you simply need to have KPR-WETH LP tokens, you then call ```add
 
 ## Documentation
 
-[Keep3r](docs/Keep3r.md)
+[Keep3r](./docs/Keep3r.md)
 
 ## Beta Addresses
 
