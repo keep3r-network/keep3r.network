@@ -510,6 +510,8 @@ contract Keep3r {
     mapping(address => uint) public jobProposalDelay;
     /// @notice liquidity apply date
     mapping(address => mapping(address => mapping(address => uint))) public liquidityApplied;
+    /// @notice liquidity amount to apply
+    mapping(address => mapping(address => mapping(address => uint))) public liquidityAmount;
 
     /// @notice list of all current keepers
     mapping(address => bool) public keepers;
@@ -575,7 +577,10 @@ contract Keep3r {
         require(liquidityAccepted[liquidity], "Keep3r::addLiquidityToJob: asset not accepted as liquidity");
         UniswapPair(liquidity).transferFrom(msg.sender, address(this), amount);
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].add(amount);
+
         liquidityApplied[msg.sender][liquidity][job] = now.add(2 days);
+        liquidityAmount[msg.sender][liquidity][job] = liquidityAmount[msg.sender][liquidity][job].add(amount);
+
         if (!jobs[job] && jobProposalDelay[job] < now) {
             Governance(governance).proposeJob(job);
             jobProposalDelay[job] = now.add(UNBOND);
@@ -594,8 +599,9 @@ contract Keep3r {
         require(liquidityApplied[provider][liquidity][job] != 0, "Keep3r::credit: submitJob first");
         require(liquidityApplied[provider][liquidity][job] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
-        uint _credit = _liquidity.mul(liquidityProvided[provider][liquidity][job]).div(UniswapPair(liquidity).totalSupply());
+        uint _credit = _liquidity.mul(liquidityAmount[msg.sender][liquidity][job]).div(UniswapPair(liquidity).totalSupply());
         credits[job] = credits[job].add(_credit);
+        liquidityAmount[msg.sender][liquidity][job] = 0;
 
         emit ApplyCredit(job, msg.sender, block.number, _credit);
     }
