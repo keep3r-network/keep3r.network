@@ -16,7 +16,7 @@ A Job is the term used to refer to a smart contract that wishes an external enti
 
 ### Becoming a Keeper
 
-To join as a Keeper you call ```bond(uint)``` on the Keep3r contract. You do not need to have KPR tokens to join as a Keeper, so you can join with ```bond(0)```. There is a 3 day bonding delay before you can activate as a Keeper. Once the 3 days have passed, you can call ```activate()```. Once activated you lastJob timestamp will be set to the current block timestamp.
+To join as a Keeper you call ```bond(uint)``` on the Keep3r contract. You do not need to have KPR tokens to join as a Keeper, so you can join with ```bond(0)```. There is a 3 day bonding delay before you can activate as a Keeper. Once the 3 days have passed, you can call ```activate()```. Once activated you ```lastJob``` timestamp will be set to the current block timestamp.
 
 ### Registering a Job
 
@@ -28,7 +28,7 @@ If you prefer, you can register as a job by simply submitting a proposal via Gov
 
 #### Registering a Job via Contract Interface
 
-You can register as a job by calling ```submitJob(address,uint)``` on the Keep3r contract. You must not have any current active jobs associated with this account. Calling submitJob will create a pending Governance vote for the job specified by address in the function arguments. You are limited to submit a new job request via this address every 14 days.
+You can register as a job by calling ```addLiquidityToJob(address,uint)``` on the Keep3r contract. You must not have any current active jobs associated with this account. Calling ```addLiquidityToJob(address,uint)``` will create a pending Governance vote for the job specified by address in the function arguments. You are limited to submit a new job request via this address every ```14 days```.
 
 ## Job Interface
 
@@ -49,17 +49,41 @@ function execute() external {
 
 At the end of the call, you simply need to call ```workReceipt(address,uint)``` to finalize the execution for the keeper network. In the call you specify the keeper being rewarded, and the amount of KPR you would like to award them with. This is variable based on what you deem is a fair reward for the work executed.
 
+Example Keep3rJob
+
+```
+interface UniOracleFactory {
+    function update(address tokenA, address tokenB) external;
+}
+
+interface Keep3r {
+    function isKeeper(address) external view returns (bool);
+    function workReceipt(address keeper, uint amount) external;
+}
+
+contract Keep3rJob {
+    UniOracleFactory constant JOB = UniOracleFactory(0x61da8b0808CEA5281A912Cd85421A6D12261D136);
+    Keep3r constant KPR = Keep3r(0x9696Fea1121C938C861b94FcBEe98D971de54B32);
+
+    function update(address tokenA, address tokenB) external {
+        require(KPR.isKeeper(msg.sender), "Keep3rJob::update: not a valid keeper");
+        JOB.update(tokenA, tokenB);
+        KPR.workReceipt(msg.sender, 1e18);
+    }
+}
+```
+
 ### Job Credits
 
-As mentioned in Job Interface, a job has a set amount of credits that they can award keepers with. To receive credits you do not need to purchase KPR tokens, instead you need to provide KPR-WETH liquidity in Uniswap. This will give you an amount of credits equal to twice the amount of KPR tokens in the liquidity you provide.
+As mentioned in Job Interface, a job has a set amount of ```credits``` that they can award keepers with. To receive ```credits``` you do not need to purchase KPR tokens, instead you need to provide KPR-WETH liquidity in Uniswap. This will give you an amount of credits equal to the amount of KPR tokens in the liquidity you provide.
 
 You can remove your liquidity at any time, so you do not have to keep buying new credits. Your liquidity provided is never reduced and as such you can remove it whenever you no longer would like a job to be executed.
 
-To add credits, you simply need to have KPR-WETH LP tokens, you then call ```submitJob(address,uint)``` specifying the job in the address and the amount in the uint. This will then transfer your LP tokens to the contract and keep them in escrow. You can remove your liquidity at any time by calling ```unbondJob()```, this will allow you to remove the liquidity after 14 days by calling ```removeJob()```
+To add credits, you simply need to have KPR-WETH LP tokens, you then call ```addLiquidityToJob(address,uint)``` specifying the job in the address and the amount in the uint. This will then transfer your LP tokens to the contract and keep them in escrow. You can remove your liquidity at any time by calling ```unbondLiquidityFromJob()```, this will allow you to remove the liquidity after 14 days by calling ```removeLiquidityFromJob()```
 
-## Keeper Rewards
+## Documentation
 
-The Keeper can call ```claim()``` on the Keep3r contract to receive all pending rewards for executing keeper jobs.
+[Keep3r](docs/Keep3r.md)
 
 ## Beta Addresses
 
