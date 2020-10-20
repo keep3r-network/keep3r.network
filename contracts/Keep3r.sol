@@ -590,6 +590,7 @@ contract Keep3r {
      * @param job the job that is receiving the credit
      */
     function applyCreditToJob(address provider, address liquidity, address job) external {
+        require(liquidityAccepted[liquidity], "Keep3r::addLiquidityToJob: asset not accepted as liquidity");
         require(liquidityApplied[provider][liquidity][job] != 0, "Keep3r::credit: submitJob first");
         require(liquidityApplied[provider][liquidity][job] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
