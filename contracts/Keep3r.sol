@@ -498,15 +498,15 @@ contract Keep3r {
     /// @notice the current credit available for a job
     mapping(address => uint) public credits;
     /// @notice the balances for the liquidity providers
-    mapping(address => uint) public liquidityProviders;
+    mapping(address => mapping(address => uint)) public liquidityProviders;
     /// @notice tracks the relationship between a liquidityProvider and their job
-    mapping(address => address) public liquidityProvided;
+    mapping(address => mapping(address => address)) public liquidityProvided;
     /// @notice liquidity unbonding days
-    mapping(address => uint) public liquidityUnbonding;
+    mapping(address => mapping(address => uint)) public liquidityUnbonding;
     /// @notice job proposal delay
     mapping(address => uint) public jobProposalDelay;
     /// @notice liquidity apply date
-    mapping(address => uint) public liquidityApplied;
+    mapping(address => mapping(address => uint)) public liquidityApplied;
 
     /// @notice list of all current keepers
     mapping(address => bool) public keepers;
@@ -521,7 +521,9 @@ contract Keep3r {
     address public pendingGovernance;
 
     /// @notice the liquidity token supplied by users paying for jobs
-    UniswapPair public liquidity;
+    mapping(address => bool) public liquidityAccepted;
+
+    address[] public liquidityPairs;
 
     uint internal gasUsed;
 
@@ -531,16 +533,19 @@ contract Keep3r {
         _mint(msg.sender, 10000e18);
     }
 
-    function setup() public payable {
-        require(address(liquidity) == address(0x0), "Keep3r::setup: keep3r already setup");
-        WETH.deposit.value(msg.value)();
-        WETH.approve(address(UNI), msg.value);
-        _mint(address(this), 400e18);
-        allowances[address(this)][address(UNI)] = balances[address(this)];
+    function approveLiquidity(address _liquidity) external {
+        require(msg.sender == governance, "Keep3r::approveLiquidity: governance only");
+        liquidityAccepted[_liquidity] = true;
+        liquidityPairs.push(_liquidity);
+    }
 
-        // Setup liquidity pool with initial liquidity 1 ETH : 400 KPR
-        UNI.addLiquidity(address(this), address(WETH), balances[address(this)], WETH.balanceOf(address(this)), 0, 0, msg.sender, now.add(1800));
-        liquidity = UniswapPair(Factory(UNI.factory()).getPair(address(this), address(WETH)));
+    function removeLiquidity(address _liquidity) external {
+        require(msg.sender == governance, "Keep3r::approveLiquidity: governance only");
+        liquidityAccepted[_liquidity] = false;
+    }
+
+    function pairs() external view returns (address[] memory) {
+        return liquidityPairs;
     }
 
     /**
@@ -549,12 +554,13 @@ contract Keep3r {
      * @param job the job to assign credit to
      * @param amount the amount of liquidity tokens to use
      */
-    function addLiquidityToJob(address job, uint amount) external {
-        require(liquidityProvided[msg.sender]==address(0x0), "Keep3r::submitJob: liquidity already provided, please remove first");
-        liquidity.transferFrom(msg.sender, address(this), amount);
-        liquidityProviders[msg.sender] = amount;
-        liquidityProvided[msg.sender] = job;
-        liquidityApplied[msg.sender] = now.add(1 days);
+    function addLiquidityToJob(address liquidity, address job, uint amount) external {
+        require(liquidityAccepted[liquidity], "Keep3r::addLiquidityToJob: asset not accepted as liquidity");
+        require(liquidityProvided[msg.sender][liquidity]==address(0x0), "Keep3r::submitJob: liquidity already provided, please remove first");
+        UniswapPair(liquidity).transferFrom(msg.sender, address(this), amount);
+        liquidityProviders[msg.sender][liquidity] = amount;
+        liquidityProvided[msg.sender][liquidity] = job;
+        liquidityApplied[msg.sender][liquidity] = now.add(1 days);
         if (!jobs[job] && jobProposalDelay[job] < now) {
             Governance(governance).proposeJob(job);
             jobProposalDelay[job] = now.add(UNBOND);
@@ -566,41 +572,41 @@ contract Keep3r {
      * @notice Applies the credit provided in addLiquidityToJob to the job
      * @param provider the liquidity provider
      */
-    function applyCreditToJob(address provider) external {
-        require(liquidityApplied[provider] != 0, "Keep3r::credit: submitJob first");
-        require(liquidityApplied[provider] < now, "Keep3r::credit: still bonding");
+    function applyCreditToJob(address provider, address liquidity) external {
+        require(liquidityApplied[provider][liquidity] != 0, "Keep3r::credit: submitJob first");
+        require(liquidityApplied[provider][liquidity] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
-        uint _credit = _liquidity.mul(liquidityProviders[provider]).div(liquidity.totalSupply());
-        credits[liquidityProvided[msg.sender]] = credits[liquidityProvided[msg.sender]].add(_credit);
+        uint _credit = _liquidity.mul(liquidityProviders[provider][liquidity]).div(UniswapPair(liquidity).totalSupply());
+        credits[liquidityProvided[msg.sender][liquidity]] = credits[liquidityProvided[msg.sender][liquidity]].add(_credit);
     }
 
     /**
      * @notice Unbond liquidity for a pending keeper job
      */
-    function unbondLiquidityFromJob() external {
-        liquidityUnbonding[msg.sender] = now.add(UNBOND);
+    function unbondLiquidityFromJob(address liquidity) external {
+        liquidityUnbonding[msg.sender][liquidity] = now.add(UNBOND);
 
-        emit UnbondJob(liquidityProvided[msg.sender], msg.sender, block.number, liquidityProviders[msg.sender]);
+        emit UnbondJob(liquidityProvided[msg.sender][liquidity], msg.sender, block.number, liquidityProviders[msg.sender][liquidity]);
     }
 
     /**
      * @notice Allows liquidity providers to remove liquidity
      */
-    function removeLiquidityFromJob() external {
-        require(liquidityUnbonding[msg.sender] != 0, "Keep3r::removeJob: unbond first");
-        require(liquidityUnbonding[msg.sender] < now, "Keep3r::removeJob: still unbonding");
-        uint _provided = liquidityProviders[msg.sender];
+    function removeLiquidityFromJob(address liquidity) external {
+        require(liquidityUnbonding[msg.sender][liquidity] != 0, "Keep3r::removeJob: unbond first");
+        require(liquidityUnbonding[msg.sender][liquidity] < now, "Keep3r::removeJob: still unbonding");
+        uint _provided = liquidityProviders[msg.sender][liquidity];
         uint _liquidity = balances[address(liquidity)];
-        uint _credit = _liquidity.mul(_provided).div(liquidity.totalSupply());
-        address _job = liquidityProvided[msg.sender];
+        uint _credit = _liquidity.mul(_provided).div(UniswapPair(liquidity).totalSupply());
+        address _job = liquidityProvided[msg.sender][liquidity];
         if (_credit > credits[_job]) {
             credits[_job] = 0;
         } else {
             credits[_job].sub(_credit);
         }
-        liquidity.transfer(msg.sender, _provided);
-        liquidityProviders[msg.sender] = 0;
-        liquidityProvided[msg.sender] = address(0x0);
+        UniswapPair(liquidity).transfer(msg.sender, _provided);
+        liquidityProviders[msg.sender][liquidity] = 0;
+        liquidityProvided[msg.sender][liquidity] = address(0x0);
 
         emit RemoveJob(_job, msg.sender, block.number, _provided);
     }
