@@ -465,6 +465,8 @@ contract Keep3r {
     mapping(address => uint) public bondings;
     /// @notice tracks all current unbondings (time)
     mapping(address => uint) public unbondings;
+    /// @notice allows for partial unbonding
+    mapping(address => uint) public partialUnbonding;
     /// @notice tracks all current pending bonds (amount)
     mapping(address => uint) public pendingbonds;
     /// @notice tracks how much a keeper has bonded
@@ -728,13 +730,16 @@ contract Keep3r {
 
     /**
      * @notice begin the unbonding process to stop being a keeper
+     * @param amount allows for partial unbonding
      */
-    function unbond() external {
+    function unbond(uint amount) external {
         keepers[msg.sender] = false;
         unbondings[msg.sender] = now.add(UNBOND);
-        totalBonded = totalBonded.sub(bonds[msg.sender]);
-        _moveDelegates(delegates[msg.sender], address(0), bonds[msg.sender]);
-        emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender], bonds[msg.sender]);
+        bonds[msg.sender] = bonds[msg.sender].sub(amount);
+        partialUnbonding[msg.sender] = partialUnbonding[msg.sender].add(amount);
+        totalBonded = totalBonded.sub(amount);
+        _moveDelegates(delegates[msg.sender], address(0), amount);
+        emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender], amount);
     }
 
     /**
@@ -745,9 +750,9 @@ contract Keep3r {
         require(unbondings[msg.sender] < now, "Keep3r::withdraw: still unbonding");
         require(!disputes[msg.sender], "Keep3r::withdraw: pending disputes");
 
-        _transferTokens(address(this), msg.sender, bonds[msg.sender]);
-        emit KeeperUnbound(msg.sender, block.number, block.timestamp, bonds[msg.sender]);
-        bonds[msg.sender] = 0;
+        _transferTokens(address(this), msg.sender, partialUnbonding[msg.sender]);
+        emit KeeperUnbound(msg.sender, block.number, block.timestamp, partialUnbonding[msg.sender]);
+        partialUnbonding[msg.sender] = 0;
     }
 
     /**
