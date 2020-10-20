@@ -755,7 +755,7 @@ contract Keep3r {
      * @notice confirms if the current keeper is registered, can be used for general (non critical) functions
      * @return true/false if the address is a keeper
      */
-    function isKeeper(address keeper) external returns (bool) {
+    function isKeeper(address keeper) public returns (bool) {
         gasUsed = gasleft();
         return keepers[keeper];
     }
@@ -876,7 +876,7 @@ contract Keep3r {
         _transferTokens(address(this), governance, amount);
         _moveDelegates(delegates[msg.sender], address(0), amount);
         bonds[keeper] = bonds[keeper].sub(amount);
-        totalBonds = totalBonds.sub(amount);
+        totalBonded = totalBonded.sub(amount);
         disputes[keeper] = false;
         emit KeeperSlashed(keeper, msg.sender, block.number, amount);
     }
