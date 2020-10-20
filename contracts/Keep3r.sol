@@ -556,7 +556,7 @@ contract Keep3r {
         require(liquidityApplied[provider] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(liquidityProviders[provider]).div(liquidity.totalSupply());
-        credits[job] = credits[job].add(_credit.mul(2)); // Double liquidity to account for 50:50
+        credits[job] = credits[job].add(_credit);
     }
 
     /**
