@@ -779,8 +779,8 @@ contract Keep3r {
         require(pendingbonds[msg.sender] == 0, "Keep3r::bond: current pending bond");
         require(!blacklist[msg.sender], "Keep3r::bond: keeper is blacklisted");
         bondings[msg.sender] = now.add(BOND);
-        pendingbonds[msg.sender] = amount;
         _transferTokens(msg.sender, address(this), amount);
+        pendingbonds[msg.sender] = pendingbonds[msg.sender].add(amount);
         emit KeeperBonding(msg.sender, block.number, bondings[msg.sender], amount);
     }
 
@@ -794,17 +794,15 @@ contract Keep3r {
     function activate() external {
         require(bondings[msg.sender] != 0, "Keep3r::activate: bond first");
         require(bondings[msg.sender] < now, "Keep3r::activate: still bonding");
-        if (!keepers[msg.sender]) {
+        if (firstSeen[msg.sender] == 0) {
           firstSeen[msg.sender] = now;
+          keeperList.push(msg.sender);
+          lastJob[msg.sender] = now;
         }
         keepers[msg.sender] = true;
         totalBonded = totalBonded.add(pendingbonds[msg.sender]);
         bonds[msg.sender] = bonds[msg.sender].add(pendingbonds[msg.sender]);
         pendingbonds[msg.sender] = 0;
-        if (lastJob[msg.sender] == 0) {
-            lastJob[msg.sender] = now;
-            keeperList.push(msg.sender);
-        }
         emit KeeperBonded(msg.sender, block.number, block.timestamp, bonds[msg.sender]);
     }
 
@@ -822,8 +820,8 @@ contract Keep3r {
     function unbond(uint amount) external {
         unbondings[msg.sender] = now.add(UNBOND);
         bonds[msg.sender] = bonds[msg.sender].sub(amount);
-        partialUnbonding[msg.sender] = partialUnbonding[msg.sender].add(amount);
         totalBonded = totalBonded.sub(amount);
+        partialUnbonding[msg.sender] = partialUnbonding[msg.sender].add(amount);
         _moveDelegates(delegates[msg.sender], address(0), amount);
         emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender], amount);
     }
@@ -846,13 +844,15 @@ contract Keep3r {
      * @param keeper the address being slashed
      */
     function down(address keeper) external {
+        require(isKeeper(msg.sender), "Keep3r::down: not a keeper");
         require(keepers[keeper], "Keep3r::down: keeper not registered");
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
         bonds[keeper] = bonds[keeper].sub(_slash);
-        _moveDelegates(delegates[msg.sender], address(0), _slash);
-        _transferTokens(address(this), msg.sender, _slash);
+        bonds[msg.sender] = bonds[msg.sender].add(_slash);
+        _moveDelegates(delegates[msg.sender], msg.sender, _slash);
         lastJob[keeper] = now;
+        lastJob[msg.sender] = now;
         emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
     }
 
@@ -876,10 +876,10 @@ contract Keep3r {
         _transferTokens(address(this), governance, amount);
         _moveDelegates(delegates[msg.sender], address(0), amount);
         bonds[keeper] = bonds[keeper].sub(amount);
+        totalBonds = totalBonds.sub(amount);
         disputes[keeper] = false;
         emit KeeperSlashed(keeper, msg.sender, block.number, amount);
     }
-
 
     /**
      * @notice blacklists a keeper from participating in the network
