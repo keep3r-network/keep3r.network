@@ -87,7 +87,7 @@ To add credits, you simply need to have KPR-WETH LP tokens, you then call ```add
 
 ## Beta Addresses
 
-Keep3r [0xF9c4617D02fe6A72cA77CAda32238b364F398288](https://etherscan.io/address/0xf9c4617d02fe6a72ca77cada32238b364f398288)  
+Keep3r [0x4BF4660f95a7A1489CC5f6c20E95e6Ad7d4F88c1](https://etherscan.io/address/0x4bf4660f95a7a1489cc5f6c20e95e6ad7d4f88c1#code)  
 Governance [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9) (Deprecated)  
 Keep3rJob [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/address/0xb68e7deb279eaa11f234dff4931458d2c002d10d) (Deprecated)  
 
