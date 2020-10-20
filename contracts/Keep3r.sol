@@ -722,7 +722,7 @@ contract Keep3r {
      */
     function bond(uint amount) external {
         require(pendingbonds[msg.sender] == 0, "Keep3r::bond: current pending bond");
-        require(!blacklist[msg.sender], "Keep3r::bond: keeper is blacklisted");
+        require(blacklist[msg.sender], "Keep3r::bond: keeper is blacklisted");
         bondings[msg.sender] = now.add(BOND);
         pendingbonds[msg.sender] = amount;
         _transferTokens(msg.sender, address(this), amount);
