@@ -613,6 +613,7 @@ contract Keep3r {
      * @param amount the amount of liquidity being removed
      */
     function unbondLiquidityFromJob(address liquidity, address job, uint amount) external {
+        require(liquidityApplied[provider][liquidity][job] < now, "Keep3r::credit: still bonding");
         liquidityUnbonding[msg.sender][liquidity][job] = now.add(UNBOND);
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = liquidityAmountsUnbonding[msg.sender][liquidity][job].add(amount);
         require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job]);
