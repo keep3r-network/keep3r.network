@@ -759,7 +759,7 @@ contract Keep3r {
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
         bonds[keeper] = bonds[keeper].sub(_slash);
-        _mint(msg.sender, _slash);
+        _transferTokens(address(this), msg.sender, _slash);
         lastJob[keeper] = now;
         emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
     }
@@ -781,6 +781,7 @@ contract Keep3r {
      */
     function slash(address keeper, uint amount) external {
         require(msg.sender == governance, "Keep3r::slash: only governance can resolve");
+        _transferTokens(address(this), governance, amount);
         bonds[keeper] = bonds[keeper].sub(amount);
         disputes[keeper] = false;
         emit KeeperSlashed(keeper, msg.sender, block.number, amount);
