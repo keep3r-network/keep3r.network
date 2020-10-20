@@ -729,11 +729,17 @@ contract Keep3r {
     }
 
     /**
+     * @notice allows a keeper to deactivate (sub system to avoid down slashing)
+     */
+    function deactivate() external {
+        keepers[msg.sender] = false;
+    }
+
+    /**
      * @notice begin the unbonding process to stop being a keeper
      * @param amount allows for partial unbonding
      */
     function unbond(uint amount) external {
-        keepers[msg.sender] = false;
         unbondings[msg.sender] = now.add(UNBOND);
         bonds[msg.sender] = bonds[msg.sender].sub(amount);
         partialUnbonding[msg.sender] = partialUnbonding[msg.sender].add(amount);
