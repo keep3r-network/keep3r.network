@@ -551,12 +551,16 @@ contract Keep3r {
         emit SubmitJob(job, msg.sender, block.number, amount);
     }
 
-    function credit(address provider, address job) external {
+    /**
+     * @notice Applies the credit provided in addLiquidityToJob to the job
+     * @param provider the liquidity provider
+     */
+    function credit(address provider) external {
         require(liquidityApplied[provider] != 0, "Keep3r::credit: submitJob first");
         require(liquidityApplied[provider] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(liquidityProviders[provider]).div(liquidity.totalSupply());
-        credits[job] = credits[job].add(_credit);
+        credits[liquidityProvided[msg.sender]] = credits[liquidityProvided[msg.sender]].add(_credit);
     }
 
     /**
