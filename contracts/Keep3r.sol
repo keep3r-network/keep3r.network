@@ -503,6 +503,8 @@ contract Keep3r {
 
     /// @notice list of all current keepers
     mapping(address => bool) public keepers;
+    /// @notice blacklist of keepers not allowed to participate
+    mapping(address => bool) public blacklist;
 
     /// @notice traversable array of keepers to make external management easier
     address[] public keeperList;
@@ -698,6 +700,7 @@ contract Keep3r {
      */
     function bond(uint amount) external {
         require(pendingbonds[msg.sender] == 0, "Keep3r::bond: current pending bond");
+        require(!blacklist[msg.sender], "Keep3r::bond: keeper is blacklisted");
         bondings[msg.sender] = now.add(BOND);
         pendingbonds[msg.sender] = amount;
         _transferTokens(msg.sender, address(this), amount);
@@ -770,6 +773,7 @@ contract Keep3r {
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
         bonds[keeper] = bonds[keeper].sub(_slash);
+        _moveDelegates(delegates[msg.sender], address(0), _slash);
         _transferTokens(address(this), msg.sender, _slash);
         lastJob[keeper] = now;
         emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
@@ -790,12 +794,25 @@ contract Keep3r {
      * @param keeper the address being slashed
      * @param amount the amount being slashed
      */
-    function slash(address keeper, uint amount) external {
+    function slash(address keeper, uint amount) public {
         require(msg.sender == governance, "Keep3r::slash: only governance can resolve");
         _transferTokens(address(this), governance, amount);
+        _moveDelegates(delegates[msg.sender], address(0), amount);
         bonds[keeper] = bonds[keeper].sub(amount);
         disputes[keeper] = false;
         emit KeeperSlashed(keeper, msg.sender, block.number, amount);
+    }
+
+
+    /**
+     * @notice blacklists a keeper from participating in the network
+     * @param keeper the address being slashed
+     */
+    function revoke(address keeper) external {
+        require(msg.sender == governance, "Keep3r::slash: only governance can resolve");
+        keepers[keeper] = false;
+        blacklist[keeper] = true;
+        slash(keeper, bonds[keeper]);
     }
 
     /**
