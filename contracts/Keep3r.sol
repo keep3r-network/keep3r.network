@@ -755,7 +755,7 @@ contract Keep3r {
      * @notice confirms if the current keeper is registered, can be used for general (non critical) functions
      * @return true/false if the address is a keeper
      */
-    function isKeeper(address keeper) public returns (bool) {
+    function isKeeper(address keeper) external returns (bool) {
         gasUsed = gasleft();
         return keepers[keeper];
     }
@@ -844,7 +844,7 @@ contract Keep3r {
      * @param keeper the address being slashed
      */
     function down(address keeper) external {
-        require(isKeeper(msg.sender), "Keep3r::down: not a keeper");
+        require(keepers[msg.sender], "Keep3r::down: not a keeper");
         require(keepers[keeper], "Keep3r::down: keeper not registered");
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
