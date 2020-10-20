@@ -58,35 +58,51 @@ Block number must be a finalized block or else this function will revert to prev
 
 
 
-### `setup()` (public)
+### `approveLiquidity(address liquidity)` (external)
+
+Approve a liquidity pair for being accepted in future
 
 
 
 
+### `removeLiquidity(address liquidity)` (external)
 
-### `addLiquidityToJob(address job, uint256 amount)` (external)
+Remove a liquidity pair from being accepted in future
+
+
+
+
+### `pairs() → address[]` (external)
+
+Displays all accepted liquidity pairs
+
+
+
+### `addLiquidityToJob(address liquidity, address job, uint256 amount)` (external)
 
 Allows liquidity providers to submit jobs
 
 
 
 
-### `applyCreditToJob(address provider)` (external)
+### `applyCreditToJob(address provider, address liquidity, address job)` (external)
 
 Applies the credit provided in addLiquidityToJob to the job
 
 
 
 
-### `unbondLiquidityFromJob()` (external)
+### `unbondLiquidityFromJob(address liquidity, address job, uint256 amount)` (external)
 
 Unbond liquidity for a pending keeper job
 
 
 
-### `removeLiquidityFromJob()` (external)
+
+### `removeLiquidityFromJob(address liquidity, address job)` (external)
 
 Allows liquidity providers to remove liquidity
+
 
 
 
@@ -99,6 +115,7 @@ Allows governance to mint new tokens to treasury
 
 ### `burn(uint256 amount)` (external)
 
+burn owned tokens
 
 
 
@@ -129,9 +146,23 @@ Allows governance to add new job systems
 
 
 
+### `getJobs() → address[]` (external)
+
+Full listing of all jobs ever added
+
+
+
+
 ### `removeJob(address job)` (external)
 
 Allows governance to remove a job from the systems
+
+
+
+
+### `setKeep3rHelper(contract Keep3rHelper _kprh)` (external)
+
+Allows governance to change the Keep3rHelper for max spend
 
 
 
@@ -214,9 +245,16 @@ allows governance to create a dispute for a given keeper
 
 
 
-### `slash(address keeper, uint256 amount)` (external)
+### `slash(address keeper, uint256 amount)` (public)
 
 allows governance to slash a keeper based on a dispute
+
+
+
+
+### `revoke(address keeper)` (external)
+
+blacklists a keeper from participating in the network
 
 
 
@@ -312,6 +350,12 @@ The standard EIP-20 approval event
 ### `SubmitJob(address job, address provider, uint256 block, uint256 credit)`
 
 Submit a job
+
+
+
+### `ApplyCredit(address job, address provider, uint256 block, uint256 credit)`
+
+Apply credit to a job
 
 
 

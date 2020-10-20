@@ -421,6 +421,9 @@ contract Keep3r {
     /// @notice Submit a job
     event SubmitJob(address indexed job, address indexed provider, uint block, uint credit);
 
+    /// @notice Apply credit to a job
+    event ApplyCredit(address indexed job, address indexed provider, uint block, uint credit);
+
     /// @notice Remove credit for a job
     event RemoveJob(address indexed job, address indexed provider, uint block, uint credit);
 
@@ -515,6 +518,8 @@ contract Keep3r {
 
     /// @notice traversable array of keepers to make external management easier
     address[] public keeperList;
+    /// @notice traversable array of jobs to make external management easier
+    address[] public jobList;
 
     /// @notice governance address for the governance contract
     address public governance;
@@ -533,17 +538,29 @@ contract Keep3r {
         _mint(msg.sender, 10000e18);
     }
 
-    function approveLiquidity(address _liquidity) external {
+
+    /**
+     * @notice Approve a liquidity pair for being accepted in future
+     * @param liquidity the liquidity no longer accepted
+     */
+    function approveLiquidity(address liquidity) external {
         require(msg.sender == governance, "Keep3r::approveLiquidity: governance only");
-        liquidityAccepted[_liquidity] = true;
-        liquidityPairs.push(_liquidity);
+        liquidityAccepted[liquidity] = true;
+        liquidityPairs.push(liquidity);
     }
 
-    function removeLiquidity(address _liquidity) external {
+    /**
+     * @notice Remove a liquidity pair from being accepted in future
+     * @param liquidity the liquidity no longer accepted
+     */
+    function removeLiquidity(address liquidity) external {
         require(msg.sender == governance, "Keep3r::approveLiquidity: governance only");
-        liquidityAccepted[_liquidity] = false;
+        liquidityAccepted[liquidity] = false;
     }
 
+    /**
+     * @notice Displays all accepted liquidity pairs
+     */
     function pairs() external view returns (address[] memory) {
         return liquidityPairs;
     }
@@ -569,6 +586,8 @@ contract Keep3r {
     /**
      * @notice Applies the credit provided in addLiquidityToJob to the job
      * @param provider the liquidity provider
+     * @param liquidity the pair being added as liquidity
+     * @param job the job that is receiving the credit
      */
     function applyCreditToJob(address provider, address liquidity, address job) external {
         require(liquidityApplied[provider][liquidity][job] != 0, "Keep3r::credit: submitJob first");
@@ -576,10 +595,15 @@ contract Keep3r {
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(liquidityProvided[provider][liquidity][job]).div(UniswapPair(liquidity).totalSupply());
         credits[job] = credits[job].add(_credit);
+
+        emit ApplyCredit(job, msg.sender, block.number, _credit);
     }
 
     /**
      * @notice Unbond liquidity for a pending keeper job
+     * @param liquidity the pair being unbound
+     * @param job the job being unbound from
+     * @param amount the amount of liquidity being removed
      */
     function unbondLiquidityFromJob(address liquidity, address job, uint amount) external {
         liquidityUnbonding[msg.sender][liquidity][job] = now.add(UNBOND);
@@ -599,6 +623,8 @@ contract Keep3r {
 
     /**
      * @notice Allows liquidity providers to remove liquidity
+     * @param liquidity the pair being unbound
+     * @param job the job being unbound from
      */
     function removeLiquidityFromJob(address liquidity, address job) external {
         require(liquidityUnbonding[msg.sender][liquidity][job] != 0, "Keep3r::removeJob: unbond first");
@@ -620,6 +646,10 @@ contract Keep3r {
         _mint(governance, amount);
     }
 
+    /**
+     * @notice burn owned tokens
+     * @param amount the amount of tokens to burn
+     */
     function burn(uint amount) external {
         _burn(msg.sender, amount);
     }
@@ -663,7 +693,16 @@ contract Keep3r {
     function addJob(address job) external {
         require(msg.sender == governance, "Keep3r::addJob: only governance can add jobs");
         jobs[job] = true;
+        jobList.push(job);
         emit JobAdded(job, block.number, msg.sender);
+    }
+
+    /**
+     * @notice Full listing of all jobs ever added
+     * @return array blob
+     */
+    function getJobs() external view returns (address[] memory) {
+        return jobList;
     }
 
     /**
