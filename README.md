@@ -93,4 +93,5 @@ Keep3rJob [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/addr
 
 ## Jobs
 
-UniQuote [0x61da8b0808CEA5281A912Cd85421A6D12261D136](https://etherscan.io/address/0x61da8b0808cea5281a912cd85421a6d12261d136)
+UniQuote [0x61da8b0808CEA5281A912Cd85421A6D12261D136](https://etherscan.io/address/0x61da8b0808cea5281a912cd85421a6d12261d136)  
+Keep3rOracle [0xcea865BCcCC48978c8b4AC0639F5A9374B81c1cd](https://etherscan.io/address/0xcea865bcccc48978c8b4ac0639f5a9374b81c1cd#code)  
