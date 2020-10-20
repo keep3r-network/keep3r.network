@@ -619,14 +619,6 @@ contract Keep3r {
     }
 
     /**
-     * @notice Allows keepers to claim for work done
-     */
-    function claim() external {
-        _mint(msg.sender, work[msg.sender]);
-        work[msg.sender] = 0;
-    }
-
-    /**
      * @notice Implemented by jobs to show that a keeper performend work
      * @param keeper address of the keeper that performed the work
      * @param amount the reward that should be allocated
@@ -635,7 +627,8 @@ contract Keep3r {
         require(jobs[msg.sender], "Keep3r::workReceipt: only jobs can approve work");
         lastJob[keeper] = now;
         credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
-        work[keeper] = work[keeper].add(amount);
+        bonds[keeper] = bonds[keeper].add(amount);
+        _moveDelegates(address(0), delegates[keeper], amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
         emit KeeperWorked(msg.sender, keeper, block.number);
     }
@@ -669,6 +662,9 @@ contract Keep3r {
         pendingGovernance = _governance;
     }
 
+    /**
+     * @notice Allows pendingGovernance to accept their role as governance (protection pattern)
+     */
     function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "Keep3r::acceptGovernance: only pendingGovernance can accept");
         governance = pendingGovernance;
