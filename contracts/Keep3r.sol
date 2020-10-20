@@ -686,8 +686,9 @@ contract Keep3r {
         require(jobs[msg.sender], "Keep3r::workReceipt: only jobs can approve work");
         gasUsed = gasUsed.sub(gasleft());
         require(amount < KPRH.getQuoteLimit(gasUsed), "Keep3r::workReceipt: spending over max limit");
-        lastJob[keeper] = now;
         credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
+        lastJob[keeper] = now;
+        _mint(address(this), amount);
         bonds[keeper] = bonds[keeper].add(amount);
         totalBonded = totalBonded.add(amount);
         _moveDelegates(address(0), delegates[keeper], amount);
