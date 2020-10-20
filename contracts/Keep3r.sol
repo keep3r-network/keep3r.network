@@ -555,7 +555,7 @@ contract Keep3r {
      * @notice Applies the credit provided in addLiquidityToJob to the job
      * @param provider the liquidity provider
      */
-    function credit(address provider) external {
+    function applyCreditToJob(address provider) external {
         require(liquidityApplied[provider] != 0, "Keep3r::credit: submitJob first");
         require(liquidityApplied[provider] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
@@ -566,7 +566,7 @@ contract Keep3r {
     /**
      * @notice Unbond liquidity for a pending keeper job
      */
-    function unbondJob() external {
+    function unbondLiquidityFromJob() external {
         liquidityUnbonding[msg.sender] = now.add(UNBOND);
 
         emit UnbondJob(liquidityProvided[msg.sender], msg.sender, block.number, liquidityProviders[msg.sender]);
