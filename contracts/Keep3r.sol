@@ -223,7 +223,7 @@ interface Factory {
 }
 
 interface Keep3rHelper {
-    function getQuoteLimit(uint gasUsed, uint gasPrice) external view returns (uint);
+    function getQuoteLimit(uint gasUsed) external view returns (uint);
 }
 
 contract Keep3r {
@@ -641,7 +641,7 @@ contract Keep3r {
     function workReceipt(address keeper, uint amount) external {
         require(jobs[msg.sender], "Keep3r::workReceipt: only jobs can approve work");
         gasUsed = gasUsed.sub(gasleft());
-        require(amount < KPRH.getQuoteLimit(gasUsed, tx.gasprice), "Keep3r::workReceipt: spending over max limit");
+        require(amount < KPRH.getQuoteLimit(gasUsed), "Keep3r::workReceipt: spending over max limit");
         lastJob[keeper] = now;
         credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
         bonds[keeper] = bonds[keeper].add(amount);
