@@ -538,7 +538,7 @@ contract Keep3r {
      * @param job the job to assign credit to
      * @param amount the amount of liquidity tokens to use
      */
-    function submitJob(address job, uint amount) external {
+    function addLiquidityToJob(address job, uint amount) external {
         require(liquidityProvided[msg.sender]==address(0x0), "Keep3r::submitJob: liquidity already provided, please remove first");
         liquidity.transferFrom(msg.sender, address(this), amount);
         liquidityProviders[msg.sender] = amount;
@@ -571,7 +571,7 @@ contract Keep3r {
     /**
      * @notice Allows liquidity providers to remove liquidity
      */
-    function removeJob() external {
+    function removeLiquidityFromJob() external {
         require(liquidityUnbonding[msg.sender] != 0, "Keep3r::removeJob: unbond first");
         require(liquidityUnbonding[msg.sender] < now, "Keep3r::removeJob: still unbonding");
         uint _provided = liquidityProviders[msg.sender];
