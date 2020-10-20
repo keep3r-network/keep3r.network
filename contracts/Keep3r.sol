@@ -28,7 +28,7 @@ library SafeMath {
      */
     function add(uint a, uint b) internal pure returns (uint) {
         uint c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
+        require(c >= a, "Keep3r::SafeMath: addition overflow");
 
         return c;
     }
@@ -57,7 +57,7 @@ library SafeMath {
      * - Subtraction cannot underflow.
      */
     function sub(uint a, uint b) internal pure returns (uint) {
-        return sub(a, b, "Uniloan::SafeMath: subtraction underflow");
+        return sub(a, b, "Keep3r::SafeMath: subtraction underflow");
     }
 
     /**
@@ -92,7 +92,7 @@ library SafeMath {
         }
 
         uint c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
+        require(c / a == b, "Keep3r::SafeMath: multiplication overflow");
 
         return c;
     }
@@ -131,7 +131,7 @@ library SafeMath {
      * - The divisor cannot be zero.
      */
     function div(uint a, uint b) internal pure returns (uint) {
-        return div(a, b, "SafeMath: division by zero");
+        return div(a, b, "Keep3r::SafeMath: division by zero");
     }
 
     /**
@@ -166,7 +166,7 @@ library SafeMath {
      * - The divisor cannot be zero.
      */
     function mod(uint a, uint b) internal pure returns (uint) {
-        return mod(a, b, "SafeMath: modulo by zero");
+        return mod(a, b, "Keep3r::SafeMath: modulo by zero");
     }
 
     /**
@@ -550,11 +550,11 @@ contract Keep3r {
     }
 
     /**
-     * @notice Remove a liquidity pair from being accepted in future
+     * @notice Revoke a liquidity pair from being accepted in future
      * @param liquidity the liquidity no longer accepted
      */
-    function removeLiquidity(address liquidity) external {
-        require(msg.sender == governance, "Keep3r::approveLiquidity: governance only");
+    function revokeLiquidity(address liquidity) external {
+        require(msg.sender == governance, "Keep3r::revokeLiquidity: governance only");
         liquidityAccepted[liquidity] = false;
     }
 
@@ -575,7 +575,7 @@ contract Keep3r {
         require(liquidityAccepted[liquidity], "Keep3r::addLiquidityToJob: asset not accepted as liquidity");
         UniswapPair(liquidity).transferFrom(msg.sender, address(this), amount);
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].add(amount);
-        liquidityApplied[msg.sender][liquidity][job] = now.add(1 days);
+        liquidityApplied[msg.sender][liquidity][job] = now.add(2 days);
         if (!jobs[job] && jobProposalDelay[job] < now) {
             Governance(governance).proposeJob(job);
             jobProposalDelay[job] = now.add(UNBOND);
