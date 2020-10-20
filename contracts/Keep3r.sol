@@ -616,7 +616,7 @@ contract Keep3r {
         require(liquidityAmount[msg.sender][liquidity][job] == 0, "Keep3r::credit: pending credit, settle first");
         liquidityUnbonding[msg.sender][liquidity][job] = now.add(UNBOND);
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = liquidityAmountsUnbonding[msg.sender][liquidity][job].add(amount);
-        require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job]);
+        require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "Keep3r::unbondLiquidityFromJob: insufficient funds");
 
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(amount).div(UniswapPair(liquidity).totalSupply());
@@ -689,6 +689,7 @@ contract Keep3r {
         lastJob[keeper] = now;
         credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
         bonds[keeper] = bonds[keeper].add(amount);
+        totalBonded = totalBonded.add(amount);
         _moveDelegates(address(0), delegates[keeper], amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
         emit KeeperWorked(msg.sender, keeper, block.number);
