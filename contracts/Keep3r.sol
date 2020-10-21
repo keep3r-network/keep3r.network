@@ -315,7 +315,7 @@ contract Keep3r {
      * @param s Half of the ECDSA signature pair
      */
     function delegateBySig(address delegatee, uint nonce, uint expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
@@ -447,7 +447,7 @@ contract Keep3r {
     event JobRemoved(address indexed job, uint block, address governance);
 
     /// @notice Worked a job
-    event KeeperWorked(address indexed job, address indexed keeper, uint block);
+    event KeeperWorked(address indexed credit, address indexed job, address indexed keeper, uint block);
 
     /// @notice Keeper bonding
     event KeeperBonding(address indexed keeper, uint block, uint active, uint bond);
@@ -737,23 +737,34 @@ contract Keep3r {
         lastJob[keeper] = now;
         _bond(address(this), keeper, amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
-        emit KeeperWorked(msg.sender, keeper, block.number);
+        emit KeeperWorked(address(this), msg.sender, keeper, block.number);
     }
 
+    /**
+     * @notice Implemented by jobs to show that a keeper performend work
+     * @param credit the asset being awarded to the keeper
+     * @param keeper address of the keeper that performed the work
+     * @param amount the reward that should be allocated
+     */
     function receipt(address credit, address keeper, uint amount) external {
         require(jobs[msg.sender], "KPR::receipt: only jobs can approve work");
         credits[msg.sender][credit] = credits[msg.sender][credit].sub(amount, "KPR::workReceipt: insuffient funds to pay keeper");
         lastJob[keeper] = now;
         ERC20(credit).transfer(msg.sender, amount);
-        emit KeeperWorked(msg.sender, keeper, block.number);
+        emit KeeperWorked(credit, msg.sender, keeper, block.number);
     }
 
+    /**
+     * @notice Implemented by jobs to show that a keeper performend work
+     * @param keeper address of the keeper that performed the work
+     * @param amount the amount of ETH sent to the keeper
+     */
     function receiptETH(address keeper, uint amount) external {
         require(jobs[msg.sender], "KPR::receipt: only jobs can approve work");
         credits[msg.sender][ETH] = credits[msg.sender][ETH].sub(amount, "KPR::workReceipt: insuffient funds to pay keeper");
         lastJob[keeper] = now;
         payable(keeper).transfer(amount);
-        emit KeeperWorked(msg.sender, keeper, block.number);
+        emit KeeperWorked(ETH, msg.sender, keeper, block.number);
     }
 
     function _bond(address bonding, address _from, uint _amount) internal {
@@ -831,6 +842,7 @@ contract Keep3r {
 
     /**
      * @notice confirms if the current keeper is registered, can be used for general (non critical) functions
+     * @param keeper the keeper being investigated
      * @return true/false if the address is a keeper
      */
     function isKeeper(address keeper) external returns (bool) {
@@ -840,6 +852,10 @@ contract Keep3r {
 
     /**
      * @notice confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
+     * @param keeper the keeper being investigated
+     * @param minBond the minimum requirement for the asset provided in bond
+     * @param earned the total funds earned in the keepers lifetime
+     * @param age the age of the keeper in the system
      * @return true/false if the address is a keeper and has more than the bond
      */
     function isMinKeeper(address keeper, uint minBond, uint earned, uint age) external returns (bool) {
@@ -852,6 +868,11 @@ contract Keep3r {
 
     /**
      * @notice confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
+     * @param keeper the keeper being investigated
+     * @param bond the bound asset being evaluated
+     * @param minBond the minimum requirement for the asset provided in bond
+     * @param earned the total funds earned in the keepers lifetime
+     * @param age the age of the keeper in the system
      * @return true/false if the address is a keeper and has more than the bond
      */
     function isBondedKeeper(address keeper, address bond, uint minBond, uint earned, uint age) external returns (bool) {
@@ -864,6 +885,8 @@ contract Keep3r {
 
     /**
      * @notice begin the bonding process for a new keeper
+     * @param bonding the asset being bound
+     * @param amount the amount of bonding asset being bound
      */
     function bond(address bonding, uint amount) external {
         require(pendingbonds[msg.sender][bonding] == 0, "KPR::bond: current pending bond");
@@ -878,12 +901,16 @@ contract Keep3r {
         emit KeeperBonding(msg.sender, block.number, bondings[msg.sender][bonding], amount);
     }
 
+    /**
+     * @notice get full list of keepers in the system
+     */
     function getKeepers() external view returns (address[] memory) {
         return keeperList;
     }
 
     /**
      * @notice allows a keeper to activate/register themselves after bonding
+     * @param bonding the asset being activated as bond collateral
      */
     function activate(address bonding) external {
         require(!blacklist[msg.sender], "KPR::activate: keeper is blacklisted");
@@ -901,6 +928,7 @@ contract Keep3r {
 
     /**
      * @notice begin the unbonding process to stop being a keeper
+     * @param bonding the asset being unbound
      * @param amount allows for partial unbonding
      */
     function unbond(address bonding, uint amount) external {
@@ -912,6 +940,7 @@ contract Keep3r {
 
     /**
      * @notice withdraw funds after unbonding has finished
+     * @param bonding the asset to withdraw from the bonding pool
      */
     function withdraw(address bonding) external {
         require(unbondings[msg.sender][bonding] != 0 && unbondings[msg.sender][bonding] < now, "KPR::withdraw: still unbonding");
@@ -956,6 +985,7 @@ contract Keep3r {
 
     /**
      * @notice allows governance to slash a keeper based on a dispute
+     * @param bonded the asset being slashed
      * @param keeper the address being slashed
      * @param amount the amount being slashed
      */
@@ -1028,7 +1058,7 @@ contract Keep3r {
      * @param s Half of the ECDSA signature pair
      */
     function permit(address owner, address spender, uint amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, amount, nonces[owner]++, deadline));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
@@ -1092,7 +1122,7 @@ contract Keep3r {
         emit Transfer(src, dst, amount);
     }
 
-    function getChainId() internal pure returns (uint) {
+    function _getChainId() internal pure returns (uint) {
         uint chainId;
         assembly { chainId := chainid() }
         return chainId;

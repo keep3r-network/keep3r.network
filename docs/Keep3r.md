@@ -58,6 +58,20 @@ Block number must be a finalized block or else this function will revert to prev
 
 
 
+### `addCreditETH(address job)` (external)
+
+Add ETH credit to a job to be paid out for work
+
+
+
+
+### `addCredit(address credit, address job, uint256 amount)` (external)
+
+Add credit to a job to be paid out for work
+
+
+
+
 ### `approveLiquidity(address liquidity)` (external)
 
 Approve a liquidity pair for being accepted in future
@@ -65,9 +79,9 @@ Approve a liquidity pair for being accepted in future
 
 
 
-### `removeLiquidity(address liquidity)` (external)
+### `revokeLiquidity(address liquidity)` (external)
 
-Remove a liquidity pair from being accepted in future
+Revoke a liquidity pair from being accepted in future
 
 
 
@@ -139,6 +153,32 @@ Implemented by jobs to show that a keeper performend work
 
 
 
+### `receipt(address credit, address keeper, uint256 amount)` (external)
+
+Implemented by jobs to show that a keeper performend work
+
+
+
+
+### `receiptETH(address keeper, uint256 amount)` (external)
+
+Implemented by jobs to show that a keeper performend work
+
+
+
+
+### `_bond(address bonding, address _from, uint256 _amount)` (internal)
+
+
+
+
+
+### `_unbond(address bonding, address _from, uint256 _amount)` (internal)
+
+
+
+
+
 ### `addJob(address job)` (external)
 
 Allows governance to add new job systems
@@ -187,47 +227,51 @@ confirms if the current keeper is registered, can be used for general (non criti
 
 
 
-### `isMinKeeper(address keeper, uint256 minBond, uint256 completed, uint256 age) → bool` (external)
+### `isMinKeeper(address keeper, uint256 minBond, uint256 earned, uint256 age) → bool` (external)
 
 confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
 
 
 
 
-### `bond(uint256 amount)` (external)
+### `isBondedKeeper(address keeper, address bond, uint256 minBond, uint256 earned, uint256 age) → bool` (external)
+
+confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
+
+
+
+
+### `bond(address bonding, uint256 amount)` (external)
 
 begin the bonding process for a new keeper
 
 
 
+
 ### `getKeepers() → address[]` (external)
 
+get full list of keepers in the system
 
 
 
-
-### `activate()` (external)
+### `activate(address bonding)` (external)
 
 allows a keeper to activate/register themselves after bonding
 
 
 
-### `deactivate()` (external)
 
-allows a keeper to deactivate (sub system to avoid down slashing)
-
-
-
-### `unbond(uint256 amount)` (external)
+### `unbond(address bonding, uint256 amount)` (external)
 
 begin the unbonding process to stop being a keeper
 
 
 
 
-### `withdraw()` (external)
+### `withdraw(address bonding)` (external)
 
 withdraw funds after unbonding has finished
+
 
 
 
@@ -245,7 +289,7 @@ allows governance to create a dispute for a given keeper
 
 
 
-### `slash(address keeper, uint256 amount)` (public)
+### `slash(address bonded, address keeper, uint256 amount)` (public)
 
 allows governance to slash a keeper based on a dispute
 
@@ -316,7 +360,7 @@ Transfer `amount` tokens from `src` to `dst`
 
 
 
-### `getChainId() → uint256` (internal)
+### `_getChainId() → uint256` (internal)
 
 
 
@@ -383,7 +427,7 @@ Removed a job
 
 
 
-### `KeeperWorked(address job, address keeper, uint256 block)`
+### `KeeperWorked(address credit, address job, address keeper, uint256 block)`
 
 Worked a job
 
@@ -428,6 +472,12 @@ Keeper disputed
 ### `KeeperResolved(address keeper, uint256 block)`
 
 Keeper resolved
+
+
+
+### `AddCredit(address credit, address job, address creditor, uint256 block, uint256 amount)`
+
+
 
 
 
