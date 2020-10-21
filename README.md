@@ -86,20 +86,24 @@ To add credits, you simply need to have KPR-WETH LP tokens, you then call ```add
 [Keep3r](docs/Keep3r.md)
 
 ## Beta Addresses
-
-Keep3r [0xb0A150b23354d90182D2024239d264F3Be8B00b2](https://etherscan.io/address/0xb0A150b23354d90182D2024239d264F3Be8B00b2) (rc.1.1)  
-Governance [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9) (Deprecated)  
-Keep3rJob [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/address/0xb68e7deb279eaa11f234dff4931458d2c002d10d) (Deprecated)  
+Description | Address
+--- | ---
+Keep3r | [0xb0A150b23354d90182D2024239d264F3Be8B00b2](https://etherscan.io/address/0xb0A150b23354d90182D2024239d264F3Be8B00b2) (rc.1.1)  
+Governance | [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9) (Deprecated)  
+Keep3rJob | [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/address/0xb68e7deb279eaa11f234dff4931458d2c002d10d) (Deprecated)  
 
 ## Jobs
 
-UniQuote [0x61da8b0808CEA5281A912Cd85421A6D12261D136](https://etherscan.io/address/0x61da8b0808cea5281a912cd85421a6d12261d136)  
-Keep3rOracle [0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23](https://etherscan.io/address/0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23#code)  
+Job | Address
+--- | ---
+UniQuote | [0x61da8b0808CEA5281A912Cd85421A6D12261D136](https://etherscan.io/address/0x61da8b0808cea5281a912cd85421a6d12261d136)  
+Keep3rOracle | [0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23](https://etherscan.io/address/0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23#code)  
 
 ## Pairs  
 
-WETH | 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2  
+Pair | Address
 --- | ---
+WETH | 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2  
 WBTC | 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599  
 USDC | 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48  
 USDT | 0xdAC17F958D2ee523a2206206994597C13D831ec7  
