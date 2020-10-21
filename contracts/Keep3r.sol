@@ -613,7 +613,7 @@ contract Keep3r {
 
     /**
      * @notice Allows liquidity providers to submit jobs
-     * @param amount the amount of tokens to mint to treasury
+     * @param liquidity the liquidity being added
      * @param job the job to assign credit to
      * @param amount the amount of liquidity tokens to use
      */
@@ -652,7 +652,7 @@ contract Keep3r {
     }
 
     /**
-     * @notice Unbond liquidity for a pending keeper job
+     * @notice Unbond liquidity for a job
      * @param liquidity the pair being unbound
      * @param job the job being unbound from
      * @param amount the amount of liquidity being removed
@@ -725,7 +725,7 @@ contract Keep3r {
     }
 
     /**
-     * @notice Implemented by jobs to show that a keeper performend work
+     * @notice Implemented by jobs to show that a keeper performed work
      * @param keeper address of the keeper that performed the work
      * @param amount the reward that should be allocated
      */
@@ -741,7 +741,7 @@ contract Keep3r {
     }
 
     /**
-     * @notice Implemented by jobs to show that a keeper performend work
+     * @notice Implemented by jobs to show that a keeper performed work
      * @param credit the asset being awarded to the keeper
      * @param keeper address of the keeper that performed the work
      * @param amount the reward that should be allocated
@@ -755,7 +755,7 @@ contract Keep3r {
     }
 
     /**
-     * @notice Implemented by jobs to show that a keeper performend work
+     * @notice Implemented by jobs to show that a keeper performed work
      * @param keeper address of the keeper that performed the work
      * @param amount the amount of ETH sent to the keeper
      */
