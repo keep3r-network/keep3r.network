@@ -2,8 +2,8 @@
 
 * [Introduction](README.md)
 
-* [Managing Jobs](docs/JOBS.md)
-
+* [Jobs](docs/JOBS.md)
+* [Keepers](docs/Keepers.md)
 * [Governance](docs/Governance.md)
 
 * [Technical](docs/Keep3r.md)
