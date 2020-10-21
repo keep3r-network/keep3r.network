@@ -1,5 +1,21 @@
 # Managing Jobs
 
+## Quick Start Examples
+
+### Simple Keeper
+
+To setup a keeper function simply add the following modifier;
+
+```
+modifier keep() {
+  require(KPR.isKeeper(msg.sender), "::isKeeper: keeper is not registered");
+  _;
+  KPR.worked(msg.sender);
+}
+```
+
+The above will make sure the caller is a registered keeper as well as reward them with an amount of KPR equal to their gas spent + premium. Make sure to have credit assigned in the Keep3r system for the relevant job.
+
 ## Adding Jobs
 
 Jobs can be created directly via governance or by submitting a job proposal to governance automatically via adding liquidity.
@@ -160,6 +176,18 @@ There are three primary payment mechanisms and these are based on the credit pro
 * Pay via liquidity provided tokens (based on ```addLiquidityToJob```)
 * Pay in direct ETH (based on ```addCreditETH```)
 * Pay in direct token (based on ```addCredit```)
+
+## Auto Pay
+
+If you don't want to worry about calculating payment, you can simply let the system calculate the payment itself;
+
+```
+/**
+ * @notice Implemented by jobs to show that a keeper performed work
+ * @param keeper address of the keeper that performed the work
+ */
+function worked(address keeper) external
+```
 
 ### Pay with KPR
 
