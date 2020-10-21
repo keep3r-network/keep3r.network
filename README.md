@@ -81,9 +81,9 @@ You can remove your liquidity at any time, so you do not have to keep buying new
 
 To add credits, you simply need to have KPR-WETH LP tokens, you then call ```addLiquidityToJob(address,uint)``` specifying the job in the address and the amount in the uint. This will then transfer your LP tokens to the contract and keep them in escrow. You can remove your liquidity at any time by calling ```unbondLiquidityFromJob()```, this will allow you to remove the liquidity after 14 days by calling ```removeLiquidityFromJob()```
 
-## Documentation
+## Github
 
-[Keep3r](docs/Keep3r.md)
+[Keep3r](https://github.com/keep3r-network/keep3r.network)
 
 ## Beta Addresses
 Description | Address
