@@ -782,12 +782,12 @@ contract Keep3r {
      * @notice confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
      * @return true/false if the address is a keeper and has more than the bond
      */
-    function isMinKeeper(address keeper, uint minBond, uint completed, uint age) external returns (bool) {
+    function isMinKeeper(address keeper, uint minBond, uint earned, uint age) external returns (bool) {
         gasUsed = gasleft();
         return keepers[keeper]
                 && bonds[keeper] >= minBond
-                && workCompleted[keeper] > completed
-                && now.sub(firstSeen[keeper]) > age;
+                && workCompleted[keeper] >= earned
+                && now.sub(firstSeen[keeper]) >= age;
     }
 
     /**
@@ -821,13 +821,6 @@ contract Keep3r {
         _bond(msg.sender, pendingbonds[msg.sender]);
         pendingbonds[msg.sender] = 0;
         emit KeeperBonded(msg.sender, block.number, block.timestamp, bonds[msg.sender]);
-    }
-
-    /**
-     * @notice allows a keeper to deactivate (sub system to avoid down slashing)
-     */
-    function deactivate() external {
-        keepers[msg.sender] = false;
     }
 
     /**
