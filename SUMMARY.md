@@ -4,7 +4,7 @@
 
 * [Managing Jobs](docs/JOBS.md)
 
-* [Governance](docs/GOVERNANCE.md)
+* [Governance](docs/Governance.md)
 
 * [Technical](docs/Keep3r.md)
 
