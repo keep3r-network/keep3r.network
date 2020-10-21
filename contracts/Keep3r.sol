@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2020-10-21
+*/
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.6;
 
@@ -466,6 +470,8 @@ contract Keep3r {
     uint constant public UNBOND = 14 days;
     /// @notice 7 days maximum downtime before being slashed
     uint constant public DOWNTIME = 7 days;
+    /// @notice 3 days till liquidity can be bound
+    uint constant public LIQUIDITYBOND = 3 days;
 
     /// @notice 5% of funds slashed for downtime
     uint constant public DOWNTIMESLASH = 500;
@@ -547,6 +553,7 @@ contract Keep3r {
      */
     function approveLiquidity(address liquidity) external {
         require(msg.sender == governance, "Keep3r::approveLiquidity: governance only");
+        require(!liquidityAccepted[liquidity], "Keep3r::approveLiquidity: existing liquidity pair");
         liquidityAccepted[liquidity] = true;
         liquidityPairs.push(liquidity);
     }
@@ -578,7 +585,7 @@ contract Keep3r {
         UniswapPair(liquidity).transferFrom(msg.sender, address(this), amount);
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].add(amount);
 
-        liquidityApplied[msg.sender][liquidity][job] = now.add(2 days);
+        liquidityApplied[msg.sender][liquidity][job] = now.add(LIQUIDITYBOND);
         liquidityAmount[msg.sender][liquidity][job] = liquidityAmount[msg.sender][liquidity][job].add(amount);
 
         if (!jobs[job] && jobProposalDelay[job] < now) {
@@ -638,9 +645,9 @@ contract Keep3r {
         require(liquidityUnbonding[msg.sender][liquidity][job] != 0, "Keep3r::removeJob: unbond first");
         require(liquidityUnbonding[msg.sender][liquidity][job] < now, "Keep3r::removeJob: still unbonding");
         uint _amount = liquidityAmountsUnbonding[msg.sender][liquidity][job];
-        UniswapPair(liquidity).transfer(msg.sender, _amount);
-        liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].sub(_amount);
+        liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
+        UniswapPair(liquidity).transfer(msg.sender, _amount);
 
         emit RemoveJob(job, msg.sender, block.number, _amount);
     }
@@ -689,11 +696,21 @@ contract Keep3r {
         credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
         lastJob[keeper] = now;
         _mint(address(this), amount);
-        bonds[keeper] = bonds[keeper].add(amount);
-        totalBonded = totalBonded.add(amount);
-        _moveDelegates(address(0), delegates[keeper], amount);
+        _bond(keeper, amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
         emit KeeperWorked(msg.sender, keeper, block.number);
+    }
+
+    function _bond(address _from, uint _amount) internal {
+        bonds[_from] = bonds[_from].add(_amount);
+        totalBonded = totalBonded.add(_amount);
+        _moveDelegates(address(0), delegates[_from], _amount);
+    }
+
+    function _unbond(address _from, uint _amount) internal {
+        bonds[_from] = bonds[_from].sub(_amount);
+        totalBonded = totalBonded.sub(_amount);
+        _moveDelegates(delegates[_from], address(0), _amount);
     }
 
     /**
@@ -702,6 +719,7 @@ contract Keep3r {
      */
     function addJob(address job) external {
         require(msg.sender == governance, "Keep3r::addJob: only governance can add jobs");
+        require(!jobs[job], "Keep3r::addJob: job already known");
         jobs[job] = true;
         jobList.push(job);
         emit JobAdded(job, block.number, msg.sender);
@@ -792,16 +810,15 @@ contract Keep3r {
      * @notice allows a keeper to activate/register themselves after bonding
      */
     function activate() external {
-        require(bondings[msg.sender] != 0, "Keep3r::activate: bond first");
-        require(bondings[msg.sender] < now, "Keep3r::activate: still bonding");
+        require(!blacklist[msg.sender], "Keep3r::activate: keeper is blacklisted");
+        require(bondings[msg.sender] != 0 && bondings[msg.sender] < now, "Keep3r::activate: still bonding");
         if (firstSeen[msg.sender] == 0) {
           firstSeen[msg.sender] = now;
           keeperList.push(msg.sender);
           lastJob[msg.sender] = now;
         }
         keepers[msg.sender] = true;
-        totalBonded = totalBonded.add(pendingbonds[msg.sender]);
-        bonds[msg.sender] = bonds[msg.sender].add(pendingbonds[msg.sender]);
+        _bond(msg.sender, pendingbonds[msg.sender]);
         pendingbonds[msg.sender] = 0;
         emit KeeperBonded(msg.sender, block.number, block.timestamp, bonds[msg.sender]);
     }
@@ -819,10 +836,8 @@ contract Keep3r {
      */
     function unbond(uint amount) external {
         unbondings[msg.sender] = now.add(UNBOND);
-        bonds[msg.sender] = bonds[msg.sender].sub(amount);
-        totalBonded = totalBonded.sub(amount);
+        _unbond(msg.sender, amount);
         partialUnbonding[msg.sender] = partialUnbonding[msg.sender].add(amount);
-        _moveDelegates(delegates[msg.sender], address(0), amount);
         emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender], amount);
     }
 
@@ -830,8 +845,7 @@ contract Keep3r {
      * @notice withdraw funds after unbonding has finished
      */
     function withdraw() external {
-        require(unbondings[msg.sender] != 0, "Keep3r::withdraw: unbond first");
-        require(unbondings[msg.sender] < now, "Keep3r::withdraw: still unbonding");
+        require(unbondings[msg.sender] != 0 && unbondings[msg.sender] < now, "Keep3r::withdraw: still unbonding");
         require(!disputes[msg.sender], "Keep3r::withdraw: pending disputes");
 
         _transferTokens(address(this), msg.sender, partialUnbonding[msg.sender]);
@@ -848,9 +862,10 @@ contract Keep3r {
         require(keepers[keeper], "Keep3r::down: keeper not registered");
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
         uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
-        bonds[keeper] = bonds[keeper].sub(_slash);
-        bonds[msg.sender] = bonds[msg.sender].add(_slash);
-        _moveDelegates(delegates[msg.sender], msg.sender, _slash);
+
+        _unbond(keeper, _slash);
+        _bond(msg.sender, _slash);
+
         lastJob[keeper] = now;
         lastJob[msg.sender] = now;
         emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
@@ -874,9 +889,7 @@ contract Keep3r {
     function slash(address keeper, uint amount) public {
         require(msg.sender == governance, "Keep3r::slash: only governance can resolve");
         _transferTokens(address(this), governance, amount);
-        _moveDelegates(delegates[msg.sender], address(0), amount);
-        bonds[keeper] = bonds[keeper].sub(amount);
-        totalBonded = totalBonded.sub(amount);
+        _unbond(keeper, amount);
         disputes[keeper] = false;
         emit KeeperSlashed(keeper, msg.sender, block.number, amount);
     }

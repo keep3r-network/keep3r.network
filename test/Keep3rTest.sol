@@ -73,7 +73,7 @@ interface Keep3rLike {
 contract Keep3rTest is script {
     using SafeMath for uint;
 
-    Keep3rLike constant private KPR = Keep3rLike(0x885Db69d8087BC1C2D8Ca31Bdd8fD561D91e6fa7);
+    Keep3rLike constant private KPR = Keep3rLike(0x4fF0170A2bf39368681109034A2F7d505f181544);
 
 	function run() public {
 	    run(this.init).withCaller(0x2D407dDb06311396fE14D4b49da5F0471447d45C);
