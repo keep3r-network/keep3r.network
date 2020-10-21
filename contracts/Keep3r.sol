@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-10-21
-*/
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.6;
 
@@ -194,38 +190,6 @@ interface Governance {
     function proposeJob(address job) external returns (uint);
 }
 
-interface WETH9 {
-    function deposit() external payable;
-    function balanceOf(address account) external view returns (uint);
-    function approve(address spender, uint amount) external returns (bool);
-}
-
-interface Uniswap {
-    function factory() external pure returns (address);
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
-}
-
-interface UniswapPair {
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
-    function balanceOf(address account) external view returns (uint);
-    function approve(address spender, uint amount) external returns (bool);
-    function totalSupply() external view returns (uint);
-}
-
-interface Factory {
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
 interface Keep3rHelper {
     function getQuoteLimit(uint gasUsed) external view returns (uint);
 }
@@ -234,6 +198,7 @@ interface ERC20 {
     function transfer(address to, uint value) external returns (bool);
     function transferFrom(address from, address to, uint value) external returns (bool);
     function balanceOf(address account) external view returns (uint);
+    function totalSupply() external view returns (uint);
 }
 
 contract Keep3r {
@@ -613,7 +578,7 @@ contract Keep3r {
      */
     function addLiquidityToJob(address liquidity, address job, uint amount) external {
         require(liquidityAccepted[liquidity], "::addLiquidityToJob: asset not accepted as liquidity");
-        UniswapPair(liquidity).transferFrom(msg.sender, address(this), amount);
+        ERC20(liquidity).transferFrom(msg.sender, address(this), amount);
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].add(amount);
 
         liquidityApplied[msg.sender][liquidity][job] = now.add(LIQUIDITYBOND);
@@ -637,7 +602,7 @@ contract Keep3r {
         require(liquidityApplied[provider][liquidity][job] != 0, "::credit: submitJob first");
         require(liquidityApplied[provider][liquidity][job] < now, "::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
-        uint _credit = _liquidity.mul(liquidityAmount[msg.sender][liquidity][job]).div(UniswapPair(liquidity).totalSupply());
+        uint _credit = _liquidity.mul(liquidityAmount[msg.sender][liquidity][job]).div(ERC20(liquidity).totalSupply());
         _mint(address(this), _credit);
         credits[job][address(this)] = credits[job][address(this)].add(_credit);
         liquidityAmount[msg.sender][liquidity][job] = 0;
@@ -658,7 +623,7 @@ contract Keep3r {
         require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "::unbondLiquidityFromJob: insufficient funds");
 
         uint _liquidity = balances[address(liquidity)];
-        uint _credit = _liquidity.mul(amount).div(UniswapPair(liquidity).totalSupply());
+        uint _credit = _liquidity.mul(amount).div(ERC20(liquidity).totalSupply());
         if (_credit > credits[job][address(this)]) {
             _burn(address(this), credits[job][address(this)]);
             credits[job][address(this)] = 0;
@@ -681,7 +646,7 @@ contract Keep3r {
         uint _amount = liquidityAmountsUnbonding[msg.sender][liquidity][job];
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].sub(_amount);
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
-        UniswapPair(liquidity).transfer(msg.sender, _amount);
+        ERC20(liquidity).transfer(msg.sender, _amount);
 
         emit RemoveJob(job, msg.sender, block.number, _amount);
     }
