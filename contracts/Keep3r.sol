@@ -943,7 +943,7 @@ contract Keep3r {
      * @notice allows governance to create a dispute for a given keeper
      * @param keeper the address in dispute
      */
-    function dispute(address keeper) external returns (uint) {
+    function dispute(address keeper) external {
         require(msg.sender == governance, "::dispute: only governance can dispute");
         disputes[keeper] = true;
         emit KeeperDispute(keeper, block.number);
