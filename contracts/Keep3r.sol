@@ -230,6 +230,12 @@ interface Keep3rHelper {
     function getQuoteLimit(uint gasUsed) external view returns (uint);
 }
 
+interface ERC20 {
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
+    function balanceOf(address account) external view returns (uint);
+}
+
 contract Keep3r {
     using SafeMath for uint;
 
@@ -372,7 +378,7 @@ contract Keep3r {
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates[delegator];
-        uint delegatorBalance = bonds[delegator];
+        uint delegatorBalance = bonds[delegator][address(this)];
         delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -464,6 +470,8 @@ contract Keep3r {
     /// @notice Keeper resolved
     event KeeperResolved(address indexed keeper, uint block);
 
+    event AddCredit(address indexed credit, address indexed job, address indexed creditor, uint block, uint amount);
+
     /// @notice 1 day to bond to become a keeper
     uint constant public BOND = 3 days;
     /// @notice 14 days to unbond to remove funds from being a keeper
@@ -477,16 +485,19 @@ contract Keep3r {
     uint constant public DOWNTIMESLASH = 500;
     uint constant public BASE = 10000;
 
+    /// @notice address used for ETH transfers
+    address constant public ETH = address(0xE);
+
     /// @notice tracks all current bondings (time)
-    mapping(address => uint) public bondings;
+    mapping(address => mapping(address => uint)) public bondings;
     /// @notice tracks all current unbondings (time)
-    mapping(address => uint) public unbondings;
+    mapping(address => mapping(address => uint)) public unbondings;
     /// @notice allows for partial unbonding
-    mapping(address => uint) public partialUnbonding;
+    mapping(address => mapping(address => uint)) public partialUnbonding;
     /// @notice tracks all current pending bonds (amount)
-    mapping(address => uint) public pendingbonds;
+    mapping(address => mapping(address => uint)) public pendingbonds;
     /// @notice tracks how much a keeper has bonded
-    mapping(address => uint) public bonds;
+    mapping(address => mapping(address => uint)) public bonds;
 
     /// @notice total bonded (totalSupply for bonds)
     uint public totalBonded = 0;
@@ -505,7 +516,7 @@ contract Keep3r {
     /// @notice list of all jobs registered for the keeper system
     mapping(address => bool) public jobs;
     /// @notice the current credit available for a job
-    mapping(address => uint) public credits;
+    mapping(address => mapping(address => uint)) public credits;
     /// @notice the balances for the liquidity providers
     mapping(address => mapping(address => mapping(address => uint))) public liquidityProvided;
     /// @notice liquidity unbonding days
@@ -546,6 +557,32 @@ contract Keep3r {
         _mint(msg.sender, 10000e18);
     }
 
+    /**
+     * @notice Add ETH credit to a job to be paid out for work
+     * @param job the job being credited
+     */
+    function addCreditETH(address job) external payable {
+        require(jobs[job], "Keep3r:addCreditETH: not a valid job");
+        credits[job][ETH] = credits[job][ETH].add(msg.value);
+
+        emit AddCredit(ETH, job, msg.sender, block.number, msg.value);
+    }
+
+    /**
+     * @notice Add credit to a job to be paid out for work
+     * @param credit the credit being assigned to the job
+     * @param job the job being credited
+     * @param amount the amount of credit being added to the job
+     */
+    function addCredit(address credit, address job, uint amount) external {
+        require(jobs[job], "Keep3r:addCreditETH: not a valid job");
+        uint _before = ERC20(credit).balanceOf(address(this));
+        ERC20(credit).transferFrom(msg.sender, address(this), amount);
+        uint _after = ERC20(credit).balanceOf(address(this));
+        credits[job][credit] = credits[job][credit].add(_after.sub(_before));
+
+        emit AddCredit(credit, job, msg.sender, block.number, _after.sub(_before));
+    }
 
     /**
      * @notice Approve a liquidity pair for being accepted in future
@@ -607,7 +644,8 @@ contract Keep3r {
         require(liquidityApplied[provider][liquidity][job] < now, "Keep3r::credit: still bonding");
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(liquidityAmount[msg.sender][liquidity][job]).div(UniswapPair(liquidity).totalSupply());
-        credits[job] = credits[job].add(_credit);
+        _mint(address(this), _credit);
+        credits[job][address(this)] = credits[job][address(this)].add(_credit);
         liquidityAmount[msg.sender][liquidity][job] = 0;
 
         emit ApplyCredit(job, msg.sender, block.number, _credit);
@@ -627,10 +665,12 @@ contract Keep3r {
 
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(amount).div(UniswapPair(liquidity).totalSupply());
-        if (_credit > credits[job]) {
-            credits[job] = 0;
+        if (_credit > credits[job][address(this)]) {
+            _burn(address(this), credits[job][address(this)]);
+            credits[job][address(this)] = 0;
         } else {
-            credits[job].sub(_credit);
+            _burn(address(this), _credit);
+            credits[job][address(this)].sub(_credit);
         }
 
         emit UnbondJob(job, msg.sender, block.number, liquidityProvided[msg.sender][liquidity][job]);
@@ -693,24 +733,44 @@ contract Keep3r {
         require(jobs[msg.sender], "Keep3r::workReceipt: only jobs can approve work");
         gasUsed = gasUsed.sub(gasleft());
         require(amount < KPRH.getQuoteLimit(gasUsed), "Keep3r::workReceipt: spending over max limit");
-        credits[msg.sender] = credits[msg.sender].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
+        credits[msg.sender][address(this)] = credits[msg.sender][address(this)].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
         lastJob[keeper] = now;
-        _mint(address(this), amount);
-        _bond(keeper, amount);
+        _bond(address(this), keeper, amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
         emit KeeperWorked(msg.sender, keeper, block.number);
     }
 
-    function _bond(address _from, uint _amount) internal {
-        bonds[_from] = bonds[_from].add(_amount);
-        totalBonded = totalBonded.add(_amount);
-        _moveDelegates(address(0), delegates[_from], _amount);
+    function receipt(address credit, address keeper, uint amount) external {
+        require(jobs[msg.sender], "Keep3r::receipt: only jobs can approve work");
+        credits[msg.sender][credit] = credits[msg.sender][credit].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
+        lastJob[keeper] = now;
+        ERC20(credit).transfer(msg.sender, amount);
+        emit KeeperWorked(msg.sender, keeper, block.number);
     }
 
-    function _unbond(address _from, uint _amount) internal {
-        bonds[_from] = bonds[_from].sub(_amount);
+    function receiptETH(address keeper, uint amount) external {
+        require(jobs[msg.sender], "Keep3r::receipt: only jobs can approve work");
+        credits[msg.sender][ETH] = credits[msg.sender][ETH].sub(amount, "Keep3r::workReceipt: insuffient funds to pay keeper");
+        lastJob[keeper] = now;
+        payable(keeper).transfer(amount);
+        emit KeeperWorked(msg.sender, keeper, block.number);
+    }
+
+    function _bond(address bonding, address _from, uint _amount) internal {
+        bonds[_from][bonding] = bonds[_from][bonding].add(_amount);
+        totalBonded = totalBonded.add(_amount);
+        if (_from == address(this)) {
+            _moveDelegates(address(0), delegates[_from], _amount);
+        }
+    }
+
+    function _unbond(address bonding, address _from, uint _amount) internal {
+        bonds[_from][bonding] = bonds[_from][bonding].sub(_amount);
         totalBonded = totalBonded.sub(_amount);
-        _moveDelegates(delegates[_from], address(0), _amount);
+        if (bonding == address(this)) {
+            _moveDelegates(delegates[_from], address(0), _amount);
+        }
+
     }
 
     /**
@@ -785,7 +845,19 @@ contract Keep3r {
     function isMinKeeper(address keeper, uint minBond, uint earned, uint age) external returns (bool) {
         gasUsed = gasleft();
         return keepers[keeper]
-                && bonds[keeper] >= minBond
+                && bonds[keeper][address(this)] >= minBond
+                && workCompleted[keeper] >= earned
+                && now.sub(firstSeen[keeper]) >= age;
+    }
+
+    /**
+     * @notice confirms if the current keeper is registered and has a minimum bond, should be used for protected functions
+     * @return true/false if the address is a keeper and has more than the bond
+     */
+    function isBondedKeeper(address keeper, address bond, uint minBond, uint earned, uint age) external returns (bool) {
+        gasUsed = gasleft();
+        return keepers[keeper]
+                && bonds[keeper][bond] >= minBond
                 && workCompleted[keeper] >= earned
                 && now.sub(firstSeen[keeper]) >= age;
     }
@@ -793,13 +865,17 @@ contract Keep3r {
     /**
      * @notice begin the bonding process for a new keeper
      */
-    function bond(uint amount) external {
-        require(pendingbonds[msg.sender] == 0, "Keep3r::bond: current pending bond");
+    function bond(address bonding, uint amount) external {
+        require(pendingbonds[msg.sender][bonding] == 0, "Keep3r::bond: current pending bond");
         require(!blacklist[msg.sender], "Keep3r::bond: keeper is blacklisted");
-        bondings[msg.sender] = now.add(BOND);
-        _transferTokens(msg.sender, address(this), amount);
-        pendingbonds[msg.sender] = pendingbonds[msg.sender].add(amount);
-        emit KeeperBonding(msg.sender, block.number, bondings[msg.sender], amount);
+        bondings[msg.sender][bonding] = now.add(BOND);
+        if (bonding == address(this)) {
+            _transferTokens(msg.sender, address(this), amount);
+        } else {
+            ERC20(bonding).transferFrom(msg.sender, address(this), amount);
+        }
+        pendingbonds[msg.sender][bonding] = pendingbonds[msg.sender][bonding].add(amount);
+        emit KeeperBonding(msg.sender, block.number, bondings[msg.sender][bonding], amount);
     }
 
     function getKeepers() external view returns (address[] memory) {
@@ -809,41 +885,45 @@ contract Keep3r {
     /**
      * @notice allows a keeper to activate/register themselves after bonding
      */
-    function activate() external {
+    function activate(address bonding) external {
         require(!blacklist[msg.sender], "Keep3r::activate: keeper is blacklisted");
-        require(bondings[msg.sender] != 0 && bondings[msg.sender] < now, "Keep3r::activate: still bonding");
+        require(bondings[msg.sender][bonding] != 0 && bondings[msg.sender][bonding] < now, "Keep3r::activate: still bonding");
         if (firstSeen[msg.sender] == 0) {
           firstSeen[msg.sender] = now;
           keeperList.push(msg.sender);
           lastJob[msg.sender] = now;
         }
         keepers[msg.sender] = true;
-        _bond(msg.sender, pendingbonds[msg.sender]);
-        pendingbonds[msg.sender] = 0;
-        emit KeeperBonded(msg.sender, block.number, block.timestamp, bonds[msg.sender]);
+        _bond(bonding, msg.sender, pendingbonds[msg.sender][bonding]);
+        pendingbonds[msg.sender][bonding] = 0;
+        emit KeeperBonded(msg.sender, block.number, block.timestamp, bonds[msg.sender][bonding]);
     }
 
     /**
      * @notice begin the unbonding process to stop being a keeper
      * @param amount allows for partial unbonding
      */
-    function unbond(uint amount) external {
-        unbondings[msg.sender] = now.add(UNBOND);
-        _unbond(msg.sender, amount);
-        partialUnbonding[msg.sender] = partialUnbonding[msg.sender].add(amount);
-        emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender], amount);
+    function unbond(address bonding, uint amount) external {
+        unbondings[msg.sender][bonding] = now.add(UNBOND);
+        _unbond(bonding, msg.sender, amount);
+        partialUnbonding[msg.sender][bonding] = partialUnbonding[msg.sender][bonding].add(amount);
+        emit KeeperUnbonding(msg.sender, block.number, unbondings[msg.sender][bonding], amount);
     }
 
     /**
      * @notice withdraw funds after unbonding has finished
      */
-    function withdraw() external {
-        require(unbondings[msg.sender] != 0 && unbondings[msg.sender] < now, "Keep3r::withdraw: still unbonding");
+    function withdraw(address bonding) external {
+        require(unbondings[msg.sender][bonding] != 0 && unbondings[msg.sender][bonding] < now, "Keep3r::withdraw: still unbonding");
         require(!disputes[msg.sender], "Keep3r::withdraw: pending disputes");
 
-        _transferTokens(address(this), msg.sender, partialUnbonding[msg.sender]);
-        emit KeeperUnbound(msg.sender, block.number, block.timestamp, partialUnbonding[msg.sender]);
-        partialUnbonding[msg.sender] = 0;
+        if (bonding == address(this)) {
+            _transferTokens(address(this), msg.sender, partialUnbonding[msg.sender][bonding]);
+        } else {
+            ERC20(bonding).transfer(msg.sender, partialUnbonding[msg.sender][bonding]);
+        }
+        emit KeeperUnbound(msg.sender, block.number, block.timestamp, partialUnbonding[msg.sender][bonding]);
+        partialUnbonding[msg.sender][bonding] = 0;
     }
 
     /**
@@ -854,10 +934,10 @@ contract Keep3r {
         require(keepers[msg.sender], "Keep3r::down: not a keeper");
         require(keepers[keeper], "Keep3r::down: keeper not registered");
         require(lastJob[keeper].add(DOWNTIME) < now, "Keep3r::down: keeper safe");
-        uint _slash = bonds[keeper].mul(DOWNTIMESLASH).div(BASE);
+        uint _slash = bonds[keeper][address(this)].mul(DOWNTIMESLASH).div(BASE);
 
-        _unbond(keeper, _slash);
-        _bond(msg.sender, _slash);
+        _unbond(address(this), keeper, _slash);
+        _bond(address(this), msg.sender, _slash);
 
         lastJob[keeper] = now;
         lastJob[msg.sender] = now;
@@ -882,7 +962,7 @@ contract Keep3r {
     function slash(address keeper, uint amount) public {
         require(msg.sender == governance, "Keep3r::slash: only governance can resolve");
         _transferTokens(address(this), governance, amount);
-        _unbond(keeper, amount);
+        _unbond(address(this), keeper, amount);
         disputes[keeper] = false;
         emit KeeperSlashed(keeper, msg.sender, block.number, amount);
     }
@@ -895,7 +975,7 @@ contract Keep3r {
         require(msg.sender == governance, "Keep3r::slash: only governance can resolve");
         keepers[keeper] = false;
         blacklist[keeper] = true;
-        slash(keeper, bonds[keeper]);
+        slash(keeper, bonds[keeper][address(this)]);
     }
 
     /**
