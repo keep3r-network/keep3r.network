@@ -28,7 +28,7 @@ library SafeMath {
      */
     function add(uint a, uint b) internal pure returns (uint) {
         uint c = a + b;
-        require(c >= a, "::SafeMath: addition overflow");
+        require(c >= a, "add: +");
 
         return c;
     }
@@ -57,7 +57,7 @@ library SafeMath {
      * - Subtraction cannot underflow.
      */
     function sub(uint a, uint b) internal pure returns (uint) {
-        return sub(a, b, "::SafeMath: subtraction underflow");
+        return sub(a, b, "sub: -");
     }
 
     /**
@@ -92,7 +92,7 @@ library SafeMath {
         }
 
         uint c = a * b;
-        require(c / a == b, "::SafeMath: multiplication overflow");
+        require(c / a == b, "mul: *");
 
         return c;
     }
@@ -131,7 +131,7 @@ library SafeMath {
      * - The divisor cannot be zero.
      */
     function div(uint a, uint b) internal pure returns (uint) {
-        return div(a, b, "::SafeMath: division by zero");
+        return div(a, b, "div: /");
     }
 
     /**
@@ -166,7 +166,7 @@ library SafeMath {
      * - The divisor cannot be zero.
      */
     function mod(uint a, uint b) internal pure returns (uint) {
-        return mod(a, b, "::SafeMath: modulo by zero");
+        return mod(a, b, "mod: %");
     }
 
     /**
@@ -278,9 +278,9 @@ contract Keep3r {
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "::delegateBySig: invalid signature");
-        require(nonce == nonces[signatory]++, "::delegateBySig: invalid nonce");
-        require(now <= expiry, "::delegateBySig: signature expired");
+        require(signatory != address(0), "delegateBySig: sig");
+        require(nonce == nonces[signatory]++, "delegateBySig: nonce");
+        require(now <= expiry, "delegateBySig: expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -302,7 +302,7 @@ contract Keep3r {
      * @return The number of votes the account had as of the given block
      */
     function getPriorVotes(address account, uint blockNumber) public view returns (uint) {
-        require(blockNumber < block.number, "::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "getPriorVotes:");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -337,7 +337,7 @@ contract Keep3r {
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates[delegator];
-        uint delegatorBalance = bonds[delegator][address(this)];
+        uint delegatorBalance = votes[delegator].add(bonds[delegator][address(this)]);
         delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -350,7 +350,7 @@ contract Keep3r {
             if (srcRep != address(0)) {
                 uint32 srcRepNum = numCheckpoints[srcRep];
                 uint srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint srcRepNew = srcRepOld.sub(amount, "::_moveVotes: vote amount underflows");
+                uint srcRepNew = srcRepOld.sub(amount, "_moveVotes: underflows");
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
@@ -364,7 +364,7 @@ contract Keep3r {
     }
 
     function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint oldVotes, uint newVotes) internal {
-      uint32 blockNumber = safe32(block.number, "::_writeCheckpoint: block number exceeds 32 bits");
+      uint32 blockNumber = safe32(block.number, "_writeCheckpoint: 32 bits");
 
       if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
           checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
@@ -457,6 +457,8 @@ contract Keep3r {
     mapping(address => mapping(address => uint)) public pendingbonds;
     /// @notice tracks how much a keeper has bonded
     mapping(address => mapping(address => uint)) public bonds;
+    /// @notice tracks underlying votes (that don't have bond)
+    mapping(address => uint) public votes;
 
     /// @notice total bonded (totalSupply for bonds)
     uint public totalBonded = 0;
@@ -513,7 +515,6 @@ contract Keep3r {
     constructor() public {
         // Set governance for this token
         governance = msg.sender;
-        _mint(msg.sender, 10000e18);
     }
 
     /**
@@ -521,7 +522,7 @@ contract Keep3r {
      * @param job the job being credited
      */
     function addCreditETH(address job) external payable {
-        require(jobs[job], "::addCreditETH: not a valid job");
+        require(jobs[job], "addCreditETH: !job");
         credits[job][ETH] = credits[job][ETH].add(msg.value);
 
         emit AddCredit(ETH, job, msg.sender, block.number, msg.value);
@@ -534,7 +535,7 @@ contract Keep3r {
      * @param amount the amount of credit being added to the job
      */
     function addCredit(address credit, address job, uint amount) external {
-        require(jobs[job], "::addCreditETH: not a valid job");
+        require(jobs[job], "addCreditETH: !job");
         uint _before = ERC20(credit).balanceOf(address(this));
         ERC20(credit).transferFrom(msg.sender, address(this), amount);
         uint _after = ERC20(credit).balanceOf(address(this));
@@ -544,12 +545,47 @@ contract Keep3r {
     }
 
     /**
+     * @notice Add non transferable votes for governance
+     * @param voter to add the votes to
+     * @param amount of votes to add
+     */
+    function addVotes(address voter, uint amount) external {
+        require(msg.sender == governance, "addVotes: !gov");
+        votes[voter] = votes[voter].add(amount);
+        _moveDelegates(address(0), delegates[voter], amount);
+    }
+
+    /**
+     * @notice Remove non transferable votes for governance
+     * @param voter to subtract the votes
+     * @param amount of votes to remove
+     */
+    function removeVotes(address voter, uint amount) external {
+        require(msg.sender == governance, "addVotes: !gov");
+        votes[voter] = votes[voter].sub(amount);
+        _moveDelegates(delegates[voter], address(0), amount);
+    }
+
+    /**
+     * @notice Add credit to a job to be paid out for work
+     * @param job the job being credited
+     * @param amount the amount of credit being added to the job
+     */
+    function addKPRCredit(address job, uint amount) external {
+        require(msg.sender == governance, "addKPRCredit: !gov");
+        require(jobs[job], "addKPRCredit: !job");
+        credits[job][address(this)] = credits[job][address(this)].add(amount);
+
+        emit AddCredit(address(this), job, msg.sender, block.number, amount);
+    }
+
+    /**
      * @notice Approve a liquidity pair for being accepted in future
      * @param liquidity the liquidity no longer accepted
      */
     function approveLiquidity(address liquidity) external {
-        require(msg.sender == governance, "::approveLiquidity: governance only");
-        require(!liquidityAccepted[liquidity], "::approveLiquidity: existing liquidity pair");
+        require(msg.sender == governance, "approveLiquidity: !gov");
+        require(!liquidityAccepted[liquidity], "approveLiquidity: !pair");
         liquidityAccepted[liquidity] = true;
         liquidityPairs.push(liquidity);
     }
@@ -559,7 +595,7 @@ contract Keep3r {
      * @param liquidity the liquidity no longer accepted
      */
     function revokeLiquidity(address liquidity) external {
-        require(msg.sender == governance, "::revokeLiquidity: governance only");
+        require(msg.sender == governance, "revokeLiquidity: !gov");
         liquidityAccepted[liquidity] = false;
     }
 
@@ -577,7 +613,7 @@ contract Keep3r {
      * @param amount the amount of liquidity tokens to use
      */
     function addLiquidityToJob(address liquidity, address job, uint amount) external {
-        require(liquidityAccepted[liquidity], "::addLiquidityToJob: asset not accepted as liquidity");
+        require(liquidityAccepted[liquidity], "addLiquidityToJob: !pair");
         ERC20(liquidity).transferFrom(msg.sender, address(this), amount);
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].add(amount);
 
@@ -598,9 +634,9 @@ contract Keep3r {
      * @param job the job that is receiving the credit
      */
     function applyCreditToJob(address provider, address liquidity, address job) external {
-        require(liquidityAccepted[liquidity], "::addLiquidityToJob: asset not accepted as liquidity");
-        require(liquidityApplied[provider][liquidity][job] != 0, "::credit: submitJob first");
-        require(liquidityApplied[provider][liquidity][job] < now, "::credit: still bonding");
+        require(liquidityAccepted[liquidity], "addLiquidityToJob: !pair");
+        require(liquidityApplied[provider][liquidity][job] != 0, "credit: no bond");
+        require(liquidityApplied[provider][liquidity][job] < now, "credit: bonding");
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(liquidityAmount[msg.sender][liquidity][job]).div(ERC20(liquidity).totalSupply());
         _mint(address(this), _credit);
@@ -617,10 +653,10 @@ contract Keep3r {
      * @param amount the amount of liquidity being removed
      */
     function unbondLiquidityFromJob(address liquidity, address job, uint amount) external {
-        require(liquidityAmount[msg.sender][liquidity][job] == 0, "::credit: pending credit, settle first");
+        require(liquidityAmount[msg.sender][liquidity][job] == 0, "credit: pending credit");
         liquidityUnbonding[msg.sender][liquidity][job] = now.add(UNBOND);
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = liquidityAmountsUnbonding[msg.sender][liquidity][job].add(amount);
-        require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "::unbondLiquidityFromJob: insufficient funds");
+        require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "unbondLiquidityFromJob: insufficient funds");
 
         uint _liquidity = balances[address(liquidity)];
         uint _credit = _liquidity.mul(amount).div(ERC20(liquidity).totalSupply());
@@ -641,8 +677,8 @@ contract Keep3r {
      * @param job the job being unbound from
      */
     function removeLiquidityFromJob(address liquidity, address job) external {
-        require(liquidityUnbonding[msg.sender][liquidity][job] != 0, "::removeJob: unbond first");
-        require(liquidityUnbonding[msg.sender][liquidity][job] < now, "::removeJob: still unbonding");
+        require(liquidityUnbonding[msg.sender][liquidity][job] != 0, "removeJob: unbond");
+        require(liquidityUnbonding[msg.sender][liquidity][job] < now, "removeJob: unbonding");
         uint _amount = liquidityAmountsUnbonding[msg.sender][liquidity][job];
         liquidityProvided[msg.sender][liquidity][job] = liquidityProvided[msg.sender][liquidity][job].sub(_amount);
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
@@ -656,7 +692,7 @@ contract Keep3r {
      * @param amount the amount of tokens to mint to treasury
      */
     function mint(uint amount) external {
-        require(msg.sender == governance, "::mint: governance only");
+        require(msg.sender == governance, "mint: !gov");
         _mint(governance, amount);
     }
 
@@ -677,8 +713,8 @@ contract Keep3r {
     }
 
     function _burn(address dst, uint amount) internal {
-        require(dst != address(0), "::_burn: burn from the zero address");
-        balances[dst] = balances[dst].sub(amount, "::_burn: burn amount exceeds balance");
+        require(dst != address(0), "_burn: zero address");
+        balances[dst] = balances[dst].sub(amount, "_burn: exceeds balance");
         totalSupply = totalSupply.sub(amount);
         emit Transfer(dst, address(0), amount);
     }
@@ -697,9 +733,9 @@ contract Keep3r {
      * @param amount the reward that should be allocated
      */
     function workReceipt(address keeper, uint amount) public {
-        require(jobs[msg.sender], "::workReceipt: only jobs can approve work");
-        require(amount <= KPRH.getQuoteLimit(_gasUsed.sub(gasleft())), "::workReceipt: spending over max limit");
-        credits[msg.sender][address(this)] = credits[msg.sender][address(this)].sub(amount, "::workReceipt: insuffient funds to pay keeper");
+        require(jobs[msg.sender], "workReceipt: !job");
+        require(amount <= KPRH.getQuoteLimit(_gasUsed.sub(gasleft())), "workReceipt: max limit");
+        credits[msg.sender][address(this)] = credits[msg.sender][address(this)].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
         _bond(address(this), keeper, amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
@@ -713,8 +749,8 @@ contract Keep3r {
      * @param amount the reward that should be allocated
      */
     function receipt(address credit, address keeper, uint amount) external {
-        require(jobs[msg.sender], "::receipt: only jobs can approve work");
-        credits[msg.sender][credit] = credits[msg.sender][credit].sub(amount, "::workReceipt: insuffient funds to pay keeper");
+        require(jobs[msg.sender], "receipt: !job");
+        credits[msg.sender][credit] = credits[msg.sender][credit].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
         ERC20(credit).transfer(msg.sender, amount);
         emit KeeperWorked(credit, msg.sender, keeper, block.number);
@@ -726,8 +762,8 @@ contract Keep3r {
      * @param amount the amount of ETH sent to the keeper
      */
     function receiptETH(address keeper, uint amount) external {
-        require(jobs[msg.sender], "::receipt: only jobs can approve work");
-        credits[msg.sender][ETH] = credits[msg.sender][ETH].sub(amount, "::workReceipt: insuffient funds to pay keeper");
+        require(jobs[msg.sender], "receipt: !job");
+        credits[msg.sender][ETH] = credits[msg.sender][ETH].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
         payable(keeper).transfer(amount);
         emit KeeperWorked(ETH, msg.sender, keeper, block.number);
@@ -755,8 +791,8 @@ contract Keep3r {
      * @param job address of the contract for which work should be performed
      */
     function addJob(address job) external {
-        require(msg.sender == governance, "::addJob: only governance can add jobs");
-        require(!jobs[job], "::addJob: job already known");
+        require(msg.sender == governance, "addJob: !gov");
+        require(!jobs[job], "addJob: job known");
         jobs[job] = true;
         jobList.push(job);
         emit JobAdded(job, block.number, msg.sender);
@@ -775,7 +811,7 @@ contract Keep3r {
      * @param job address of the contract for which work should be performed
      */
     function removeJob(address job) external {
-        require(msg.sender == governance, "::removeJob: only governance can remove jobs");
+        require(msg.sender == governance, "removeJob: !gov");
         jobs[job] = false;
         emit JobRemoved(job, block.number, msg.sender);
     }
@@ -785,7 +821,7 @@ contract Keep3r {
      * @param _kprh new helper address to set
      */
     function setKeep3rHelper(Keep3rHelper _kprh) external {
-        require(msg.sender == governance, "::setKeep3rHelper: only governance can set");
+        require(msg.sender == governance, "setKeep3rHelper: !gov");
         KPRH = _kprh;
     }
 
@@ -794,7 +830,7 @@ contract Keep3r {
      * @param _governance new governance address to set
      */
     function setGovernance(address _governance) external {
-        require(msg.sender == governance, "::setGovernance: only governance can set");
+        require(msg.sender == governance, "setGovernance: !gov");
         pendingGovernance = _governance;
     }
 
@@ -802,7 +838,7 @@ contract Keep3r {
      * @notice Allows pendingGovernance to accept their role as governance (protection pattern)
      */
     function acceptGovernance() external {
-        require(msg.sender == pendingGovernance, "::acceptGovernance: only pendingGovernance can accept");
+        require(msg.sender == pendingGovernance, "acceptGovernance: !pendingGov");
         governance = pendingGovernance;
     }
 
@@ -855,8 +891,8 @@ contract Keep3r {
      * @param amount the amount of bonding asset being bound
      */
     function bond(address bonding, uint amount) external {
-        require(pendingbonds[msg.sender][bonding] == 0, "::bond: current pending bond");
-        require(!blacklist[msg.sender], "::bond: keeper is blacklisted");
+        require(pendingbonds[msg.sender][bonding] == 0, "bond: bonding");
+        require(!blacklist[msg.sender], "bond: blacklisted");
         bondings[msg.sender][bonding] = now.add(BOND);
         if (bonding == address(this)) {
             _transferTokens(msg.sender, address(this), amount);
@@ -879,8 +915,8 @@ contract Keep3r {
      * @param bonding the asset being activated as bond collateral
      */
     function activate(address bonding) external {
-        require(!blacklist[msg.sender], "::activate: keeper is blacklisted");
-        require(bondings[msg.sender][bonding] != 0 && bondings[msg.sender][bonding] < now, "::activate: still bonding");
+        require(!blacklist[msg.sender], "activate: blacklisted");
+        require(bondings[msg.sender][bonding] != 0 && bondings[msg.sender][bonding] < now, "activate: bonding");
         if (firstSeen[msg.sender] == 0) {
           firstSeen[msg.sender] = now;
           keeperList.push(msg.sender);
@@ -909,8 +945,8 @@ contract Keep3r {
      * @param bonding the asset to withdraw from the bonding pool
      */
     function withdraw(address bonding) external {
-        require(unbondings[msg.sender][bonding] != 0 && unbondings[msg.sender][bonding] < now, "::withdraw: still unbonding");
-        require(!disputes[msg.sender], "::withdraw: pending disputes");
+        require(unbondings[msg.sender][bonding] != 0 && unbondings[msg.sender][bonding] < now, "withdraw: unbonding");
+        require(!disputes[msg.sender], "withdraw: disputes");
 
         if (bonding == address(this)) {
             _transferTokens(address(this), msg.sender, partialUnbonding[msg.sender][bonding]);
@@ -926,9 +962,9 @@ contract Keep3r {
      * @param keeper the address being slashed
      */
     function down(address keeper) external {
-        require(keepers[msg.sender], "::down: not a keeper");
-        require(keepers[keeper], "::down: keeper not registered");
-        require(lastJob[keeper].add(DOWNTIME) < now, "::down: keeper safe");
+        require(keepers[msg.sender], "down: !keeper");
+        require(keepers[keeper], "down: msg.sender !keeper");
+        require(lastJob[keeper].add(DOWNTIME) < now, "down: safe");
         uint _slash = bonds[keeper][address(this)].mul(DOWNTIMESLASH).div(BASE);
 
         _unbond(address(this), keeper, _slash);
@@ -944,7 +980,7 @@ contract Keep3r {
      * @param keeper the address in dispute
      */
     function dispute(address keeper) external {
-        require(msg.sender == governance, "::dispute: only governance can dispute");
+        require(msg.sender == governance, "dispute: !gov");
         disputes[keeper] = true;
         emit KeeperDispute(keeper, block.number);
     }
@@ -956,7 +992,7 @@ contract Keep3r {
      * @param amount the amount being slashed
      */
     function slash(address bonded, address keeper, uint amount) public {
-        require(msg.sender == governance, "::slash: only governance can resolve");
+        require(msg.sender == governance, "slash: !gov");
         if (bonded == address(this)) {
             _transferTokens(address(this), governance, amount);
         } else {
@@ -972,7 +1008,7 @@ contract Keep3r {
      * @param keeper the address being slashed
      */
     function revoke(address keeper) external {
-        require(msg.sender == governance, "::slash: only governance can resolve");
+        require(msg.sender == governance, "slash: !gov");
         keepers[keeper] = false;
         blacklist[keeper] = true;
         slash(address(this), keeper, bonds[keeper][address(this)]);
@@ -983,7 +1019,7 @@ contract Keep3r {
      * @param keeper the address cleared
      */
     function resolve(address keeper) external {
-        require(msg.sender == governance, "::resolve: only governance can resolve");
+        require(msg.sender == governance, "resolve: !gov");
         disputes[keeper] = false;
         emit KeeperResolved(keeper, block.number);
     }
@@ -1028,9 +1064,9 @@ contract Keep3r {
         bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, amount, nonces[owner]++, deadline));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "::permit: invalid signature");
-        require(signatory == owner, "::permit: unauthorized");
-        require(now <= deadline, "::permit: signature expired");
+        require(signatory != address(0), "permit: signature");
+        require(signatory == owner, "permit: unauthorized");
+        require(now <= deadline, "permit: expired");
 
         allowances[owner][spender] = amount;
 
@@ -1069,7 +1105,7 @@ contract Keep3r {
         uint spenderAllowance = allowances[src][spender];
 
         if (spender != src && spenderAllowance != uint(-1)) {
-            uint newAllowance = spenderAllowance.sub(amount, "::transferFrom: transfer amount exceeds spender allowance");
+            uint newAllowance = spenderAllowance.sub(amount, "transferFrom: exceeds spender allowance");
             allowances[src][spender] = newAllowance;
 
             emit Approval(src, spender, newAllowance);
@@ -1080,11 +1116,11 @@ contract Keep3r {
     }
 
     function _transferTokens(address src, address dst, uint amount) internal {
-        require(src != address(0), "::_transferTokens: cannot transfer from the zero address");
-        require(dst != address(0), "::_transferTokens: cannot transfer to the zero address");
+        require(src != address(0), "_transferTokens: zero address");
+        require(dst != address(0), "_transferTokens: zero address");
 
-        balances[src] = balances[src].sub(amount, "::_transferTokens: transfer amount exceeds balance");
-        balances[dst] = balances[dst].add(amount, "::_transferTokens: transfer amount overflows");
+        balances[src] = balances[src].sub(amount, "_transferTokens: exceeds balance");
+        balances[dst] = balances[dst].add(amount, "_transferTokens: overflows");
         emit Transfer(src, dst, amount);
     }
 
