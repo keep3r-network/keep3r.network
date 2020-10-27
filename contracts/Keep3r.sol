@@ -1037,16 +1037,16 @@ contract Keep3r is ReentrancyGuard {
 
     function _bond(address bonding, address _from, uint _amount) internal {
         bonds[_from][bonding] = bonds[_from][bonding].add(_amount);
-        totalBonded = totalBonded.add(_amount);
-        if (_from == address(this)) {
+        if (bonding == address(this)) {
+            totalBonded = totalBonded.add(_amount);
             _moveDelegates(address(0), delegates[_from], _amount);
         }
     }
 
     function _unbond(address bonding, address _from, uint _amount) internal {
         bonds[_from][bonding] = bonds[_from][bonding].sub(_amount);
-        totalBonded = totalBonded.sub(_amount);
         if (bonding == address(this)) {
+            totalBonded = totalBonded.sub(_amount);
             _moveDelegates(delegates[_from], address(0), _amount);
         }
 
