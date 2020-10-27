@@ -931,10 +931,10 @@ contract Keep3r is ReentrancyGuard {
             credits[job][address(this)] = 0;
         } else {
             _burn(address(this), _credit);
-            credits[job][address(this)].sub(_credit);
+            credits[job][address(this)] = credits[job][address(this)].sub(_credit);
         }
 
-        emit UnbondJob(job, msg.sender, block.number, liquidityProvided[msg.sender][liquidity][job]);
+        emit UnbondJob(job, msg.sender, block.number, amount);
     }
 
     /**
