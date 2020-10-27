@@ -1018,7 +1018,7 @@ contract Keep3r is ReentrancyGuard {
         require(jobs[msg.sender], "receipt: !job");
         credits[msg.sender][credit] = credits[msg.sender][credit].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
-        IERC20(credit).safeTransfer(msg.sender, amount);
+        IERC20(credit).safeTransfer(keeper, amount);
         emit KeeperWorked(credit, msg.sender, keeper, block.number);
     }
 
