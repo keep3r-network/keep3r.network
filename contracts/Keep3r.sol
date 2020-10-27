@@ -904,12 +904,12 @@ contract Keep3r is ReentrancyGuard {
         require(liquidityApplied[provider][liquidity][job] != 0, "credit: no bond");
         require(liquidityApplied[provider][liquidity][job] < now, "credit: bonding");
         uint _liquidity = balances[address(liquidity)];
-        uint _credit = _liquidity.mul(liquidityAmount[msg.sender][liquidity][job]).div(IERC20(liquidity).totalSupply());
+        uint _credit = _liquidity.mul(liquidityAmount[provider][liquidity][job]).div(IERC20(liquidity).totalSupply());
         _mint(address(this), _credit);
         credits[job][address(this)] = credits[job][address(this)].add(_credit);
-        liquidityAmount[msg.sender][liquidity][job] = 0;
+        liquidityAmount[provider][liquidity][job] = 0;
 
-        emit ApplyCredit(job, msg.sender, block.number, _credit);
+        emit ApplyCredit(job, provider, block.number, _credit);
     }
 
     /**
