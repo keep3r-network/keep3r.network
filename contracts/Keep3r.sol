@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.12;
 
 // From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/Math.sol
 // Subject to the MIT license.
@@ -388,11 +388,11 @@ library Address {
      * _Available since v2.4.0._
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(address(this).balance >= amount, "Address: insufficient balance");
+        require(address(this).balance >= amount, "Address: insufficient");
 
         // solhint-disable-next-line avoid-call-value
         (bool success, ) = recipient.call{value:amount}("");
-        require(success, "Address: unable to send value, recipient may have reverted");
+        require(success, "Address: reverted");
     }
 }
 
@@ -434,7 +434,7 @@ library SafeERC20 {
     }
 
     function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: decreased allowance below zero");
+        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: < 0");
         callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
 
@@ -453,7 +453,7 @@ library SafeERC20 {
         //  2. The call itself is made, and success asserted
         //  3. The return value is decoded, which in turn checks the size of the returned data.
         // solhint-disable-next-line max-line-length
-        require(address(token).isContract(), "SafeERC20: call to non-contract");
+        require(address(token).isContract(), "SafeERC20: !contract");
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = address(token).call(data);
@@ -461,7 +461,7 @@ library SafeERC20 {
 
         if (returndata.length > 0) { // Return data is optional
             // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+            require(abi.decode(returndata, (bool)), "SafeERC20: !succeed");
         }
     }
 }
@@ -706,6 +706,8 @@ contract Keep3r is ReentrancyGuard {
     /// @notice 3 days till liquidity can be bound
     uint constant public LIQUIDITYBOND = 3 days;
 
+    /// @notice direct liquidity fee 0.3%
+    uint constant public FEE = 30;
     /// @notice 5% of funds slashed for downtime
     uint constant public DOWNTIMESLASH = 500;
     uint constant public BASE = 10000;
@@ -736,8 +738,6 @@ contract Keep3r is ReentrancyGuard {
 
     /// @notice tracks last job performed for a keeper
     mapping(address => uint) public lastJob;
-    /// @notice tracks the amount of job executions for a keeper
-    mapping(address => uint) public work;
     /// @notice tracks the total job executions for a keeper
     mapping(address => uint) public workCompleted;
     /// @notice list of all jobs registered for the keeper system
@@ -789,7 +789,9 @@ contract Keep3r is ReentrancyGuard {
      */
     function addCreditETH(address job) external payable {
         require(jobs[job], "addCreditETH: !job");
-        credits[job][ETH] = credits[job][ETH].add(msg.value);
+        uint _fee = msg.value.mul(FEE).div(BASE);
+        credits[job][ETH] = credits[job][ETH].add(msg.value.sub(_fee));
+        payable(governance).transfer(_fee);
 
         emit AddCredit(ETH, job, msg.sender, block.number, msg.value);
     }
@@ -804,10 +806,12 @@ contract Keep3r is ReentrancyGuard {
         require(jobs[job], "addCreditETH: !job");
         uint _before = IERC20(credit).balanceOf(address(this));
         IERC20(credit).safeTransferFrom(msg.sender, address(this), amount);
-        uint _after = IERC20(credit).balanceOf(address(this));
-        credits[job][credit] = credits[job][credit].add(_after.sub(_before));
+        uint _received = IERC20(credit).balanceOf(address(this)).sub(_before);
+        uint _fee = _received.mul(FEE).div(BASE);
+        credits[job][credit] = credits[job][credit].add(_received.sub(_fee));
+        IERC20(credit).safeTransfer(governance, _fee);
 
-        emit AddCredit(credit, job, msg.sender, block.number, _after.sub(_before));
+        emit AddCredit(credit, job, msg.sender, block.number, _received);
     }
 
     /**
@@ -818,6 +822,7 @@ contract Keep3r is ReentrancyGuard {
     function addVotes(address voter, uint amount) external {
         require(msg.sender == governance, "addVotes: !gov");
         votes[voter] = votes[voter].add(amount);
+        totalBonded = totalBonded.add(amount);
         _moveDelegates(address(0), delegates[voter], amount);
     }
 
@@ -829,6 +834,7 @@ contract Keep3r is ReentrancyGuard {
     function removeVotes(address voter, uint amount) external {
         require(msg.sender == governance, "addVotes: !gov");
         votes[voter] = votes[voter].sub(amount);
+        totalBonded = totalBonded.sub(amount);
         _moveDelegates(delegates[voter], address(0), amount);
     }
 
@@ -1129,7 +1135,7 @@ contract Keep3r is ReentrancyGuard {
     function isMinKeeper(address keeper, uint minBond, uint earned, uint age) external returns (bool) {
         _gasUsed = gasleft();
         return keepers[keeper]
-                && bonds[keeper][address(this)] >= minBond
+                && bonds[keeper][address(this)].add(votes[keeper]) >= minBond
                 && workCompleted[keeper] >= earned
                 && now.sub(firstSeen[keeper]) >= age;
     }
