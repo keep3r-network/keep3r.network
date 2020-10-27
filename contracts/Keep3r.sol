@@ -1157,7 +1157,6 @@ contract Keep3r is ReentrancyGuard {
      * @param amount the amount of bonding asset being bound
      */
     function bond(address bonding, uint amount) external nonReentrant {
-        require(pendingbonds[msg.sender][bonding] == 0, "bond: bonding");
         require(!blacklist[msg.sender], "bond: blacklisted");
         bondings[msg.sender][bonding] = now.add(BOND);
         if (bonding == address(this)) {
