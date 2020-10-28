@@ -499,6 +499,7 @@ contract Keep3r is ReentrancyGuard {
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint chainId,address verifyingContract)");
+    bytes32 public immutable DOMAINSEPARATOR;
 
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint nonce,uint expiry)");
@@ -540,9 +541,8 @@ contract Keep3r is ReentrancyGuard {
      * @param s Half of the ECDSA signature pair
      */
     function delegateBySig(address delegatee, uint nonce, uint expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAINSEPARATOR, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "delegateBySig: sig");
         require(nonce == nonces[signatory]++, "delegateBySig: nonce");
@@ -781,6 +781,7 @@ contract Keep3r is ReentrancyGuard {
     constructor() public {
         // Set governance for this token
         governance = msg.sender;
+        DOMAINSEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
     }
 
     /**
@@ -1331,9 +1332,8 @@ contract Keep3r is ReentrancyGuard {
      * @param s Half of the ECDSA signature pair
      */
     function permit(address owner, address spender, uint amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, amount, nonces[owner]++, deadline));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAINSEPARATOR, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "permit: signature");
         require(signatory == owner, "permit: unauthorized");
