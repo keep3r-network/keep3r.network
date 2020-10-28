@@ -245,14 +245,6 @@ contract ReentrancyGuard {
     }
 }
 
-interface IGovernance {
-    function proposeJob(address job) external returns (uint);
-}
-
-interface IKeep3rHelper {
-    function getQuoteLimit(uint gasUsed) external view returns (uint);
-}
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
@@ -466,18 +458,90 @@ library SafeERC20 {
     }
 }
 
-contract Keep3r is ReentrancyGuard {
+library Keep3rV1Library {
+    function getReserve(address pair, address reserve) external view returns (uint) {
+        (uint _r0, uint _r1,) = IUniswapV2Pair(pair).getReserves();
+        if (IUniswapV2Pair(pair).token0() == reserve) {
+            return _r0;
+        } else if (IUniswapV2Pair(pair).token1() == reserve) {
+            return _r1;
+        } else {
+            return 0;
+        }
+    }
+}
+
+interface IUniswapV2Pair {
+    event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
+
+    function name() external pure returns (string memory);
+    function symbol() external pure returns (string memory);
+    function decimals() external pure returns (uint8);
+    function totalSupply() external view returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint value) external returns (bool);
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
+    function nonces(address owner) external view returns (uint);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Swap(
+        address indexed sender,
+        uint amount0In,
+        uint amount1In,
+        uint amount0Out,
+        uint amount1Out,
+        address indexed to
+    );
+    event Sync(uint112 reserve0, uint112 reserve1);
+
+    function MINIMUM_LIQUIDITY() external pure returns (uint);
+    function factory() external view returns (address);
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function price0CumulativeLast() external view returns (uint);
+    function price1CumulativeLast() external view returns (uint);
+    function kLast() external view returns (uint);
+
+    function mint(address to) external returns (uint liquidity);
+    function burn(address to) external returns (uint amount0, uint amount1);
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function skim(address to) external;
+    function sync() external;
+
+    function initialize(address, address) external;
+}
+
+interface IGovernance {
+    function proposeJob(address job) external;
+}
+
+interface IKeep3rV1Helper {
+    function getQuoteLimit(uint gasUsed) external view returns (uint);
+}
+
+contract Keep3rV1 is ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
     /// @notice Keep3r Helper to set max prices for the ecosystem
-    IKeep3rHelper public KPRH;
+    IKeep3rV1Helper public KPRH;
 
     /// @notice EIP-20 token name for this token
-    string public constant name = "Keep3r";
+    string public constant name = "Keep3rV1";
 
     /// @notice EIP-20 token symbol for this token
-    string public constant symbol = "KPR";
+    string public constant symbol = "KPRv1";
 
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
@@ -499,6 +563,7 @@ contract Keep3r is ReentrancyGuard {
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint chainId,address verifyingContract)");
+    bytes32 public immutable DOMAINSEPARATOR;
 
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint nonce,uint expiry)");
@@ -527,7 +592,7 @@ contract Keep3r is ReentrancyGuard {
      * @param delegatee The address to delegate votes to
      */
     function delegate(address delegatee) public {
-        return _delegate(msg.sender, delegatee);
+        _delegate(msg.sender, delegatee);
     }
 
     /**
@@ -540,14 +605,13 @@ contract Keep3r is ReentrancyGuard {
      * @param s Half of the ECDSA signature pair
      */
     function delegateBySig(address delegatee, uint nonce, uint expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAINSEPARATOR, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "delegateBySig: sig");
         require(nonce == nonces[signatory]++, "delegateBySig: nonce");
         require(now <= expiry, "delegateBySig: expired");
-        return _delegate(signatory, delegatee);
+        _delegate(signatory, delegatee);
     }
 
     /**
@@ -654,16 +718,16 @@ contract Keep3r is ReentrancyGuard {
     event Approval(address indexed owner, address indexed spender, uint amount);
 
     /// @notice Submit a job
-    event SubmitJob(address indexed job, address indexed provider, uint block, uint credit);
+    event SubmitJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Apply credit to a job
-    event ApplyCredit(address indexed job, address indexed provider, uint block, uint credit);
+    event ApplyCredit(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Remove credit for a job
-    event RemoveJob(address indexed job, address indexed provider, uint block, uint credit);
+    event RemoveJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Unbond credit for a job
-    event UnbondJob(address indexed job, address indexed provider, uint block, uint credit);
+    event UnbondJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Added a Job
     event JobAdded(address indexed job, uint block, address governance);
@@ -701,15 +765,11 @@ contract Keep3r is ReentrancyGuard {
     uint constant public BOND = 3 days;
     /// @notice 14 days to unbond to remove funds from being a keeper
     uint constant public UNBOND = 14 days;
-    /// @notice 7 days maximum downtime before being slashed
-    uint constant public DOWNTIME = 7 days;
     /// @notice 3 days till liquidity can be bound
     uint constant public LIQUIDITYBOND = 3 days;
 
     /// @notice direct liquidity fee 0.3%
     uint constant public FEE = 30;
-    /// @notice 5% of funds slashed for downtime
-    uint constant public DOWNTIMESLASH = 500;
     uint constant public BASE = 10000;
 
     /// @notice address used for ETH transfers
@@ -781,6 +841,7 @@ contract Keep3r is ReentrancyGuard {
     constructor() public {
         // Set governance for this token
         governance = msg.sender;
+        DOMAINSEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
     }
 
     /**
@@ -896,7 +957,7 @@ contract Keep3r is ReentrancyGuard {
             IGovernance(governance).proposeJob(job);
             jobProposalDelay[job] = now.add(UNBOND);
         }
-        emit SubmitJob(job, msg.sender, block.number, amount);
+        emit SubmitJob(job, liquidity, msg.sender, block.number, amount);
     }
 
     /**
@@ -909,13 +970,13 @@ contract Keep3r is ReentrancyGuard {
         require(liquidityAccepted[liquidity], "addLiquidityToJob: !pair");
         require(liquidityApplied[provider][liquidity][job] != 0, "credit: no bond");
         require(liquidityApplied[provider][liquidity][job] < now, "credit: bonding");
-        uint _liquidity = balances[address(liquidity)];
+        uint _liquidity = Keep3rV1Library.getReserve(liquidity, address(this));
         uint _credit = _liquidity.mul(liquidityAmount[provider][liquidity][job]).div(IERC20(liquidity).totalSupply());
         _mint(address(this), _credit);
         credits[job][address(this)] = credits[job][address(this)].add(_credit);
         liquidityAmount[provider][liquidity][job] = 0;
 
-        emit ApplyCredit(job, provider, block.number, _credit);
+        emit ApplyCredit(job, liquidity, provider, block.number, _credit);
     }
 
     /**
@@ -930,7 +991,7 @@ contract Keep3r is ReentrancyGuard {
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = liquidityAmountsUnbonding[msg.sender][liquidity][job].add(amount);
         require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "unbondLiquidityFromJob: insufficient funds");
 
-        uint _liquidity = balances[address(liquidity)];
+        uint _liquidity = Keep3rV1Library.getReserve(liquidity, address(this));
         uint _credit = _liquidity.mul(amount).div(IERC20(liquidity).totalSupply());
         if (_credit > credits[job][address(this)]) {
             _burn(address(this), credits[job][address(this)]);
@@ -940,7 +1001,7 @@ contract Keep3r is ReentrancyGuard {
             credits[job][address(this)] = credits[job][address(this)].sub(_credit);
         }
 
-        emit UnbondJob(job, msg.sender, block.number, amount);
+        emit UnbondJob(job, liquidity, msg.sender, block.number, amount);
     }
 
     /**
@@ -956,7 +1017,7 @@ contract Keep3r is ReentrancyGuard {
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
         IERC20(liquidity).safeTransfer(msg.sender, _amount);
 
-        emit RemoveJob(job, msg.sender, block.number, _amount);
+        emit RemoveJob(job, liquidity, msg.sender, block.number, _amount);
     }
 
     /**
@@ -1092,7 +1153,7 @@ contract Keep3r is ReentrancyGuard {
      * @notice Allows governance to change the Keep3rHelper for max spend
      * @param _kprh new helper address to set
      */
-    function setKeep3rHelper(IKeep3rHelper _kprh) external {
+    function setKeep3rHelper(IKeep3rV1Helper _kprh) external {
         require(msg.sender == governance, "setKeep3rHelper: !gov");
         KPRH = _kprh;
     }
@@ -1168,7 +1229,9 @@ contract Keep3r is ReentrancyGuard {
         if (bonding == address(this)) {
             _transferTokens(msg.sender, address(this), amount);
         } else {
+            uint _before = IERC20(bonding).balanceOf(address(this));
             IERC20(bonding).safeTransferFrom(msg.sender, address(this), amount);
+            amount = IERC20(bonding).balanceOf(address(this)).sub(_before);
         }
         pendingbonds[msg.sender][bonding] = pendingbonds[msg.sender][bonding].add(amount);
         emit KeeperBonding(msg.sender, block.number, bondings[msg.sender][bonding], amount);
@@ -1226,24 +1289,6 @@ contract Keep3r is ReentrancyGuard {
         }
         emit KeeperUnbound(msg.sender, block.number, block.timestamp, partialUnbonding[msg.sender][bonding]);
         partialUnbonding[msg.sender][bonding] = 0;
-    }
-
-    /**
-     * @notice slash a keeper for downtime
-     * @param keeper the address being slashed
-     */
-    function down(address keeper) external {
-        require(keepers[msg.sender], "down: !keeper");
-        require(keepers[keeper], "down: msg.sender !keeper");
-        require(lastJob[keeper].add(DOWNTIME) < now, "down: safe");
-        uint _slash = bonds[keeper][address(this)].mul(DOWNTIMESLASH).div(BASE);
-
-        _unbond(address(this), keeper, _slash);
-        _bond(address(this), msg.sender, _slash);
-
-        lastJob[keeper] = now;
-        lastJob[msg.sender] = now;
-        emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
     }
 
     /**
@@ -1331,9 +1376,8 @@ contract Keep3r is ReentrancyGuard {
      * @param s Half of the ECDSA signature pair
      */
     function permit(address owner, address spender, uint amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, amount, nonces[owner]++, deadline));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAINSEPARATOR, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "permit: signature");
         require(signatory == owner, "permit: unauthorized");
