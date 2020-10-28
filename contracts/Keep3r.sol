@@ -245,14 +245,6 @@ contract ReentrancyGuard {
     }
 }
 
-interface IGovernance {
-    function proposeJob(address job) external;
-}
-
-interface IKeep3rHelper {
-    function getQuoteLimit(uint gasUsed) external view returns (uint);
-}
-
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
@@ -466,18 +458,90 @@ library SafeERC20 {
     }
 }
 
-contract Keep3r is ReentrancyGuard {
+library Keep3rV1Library {
+    function getReserve(address pair, address reserve) external view returns (uint) {
+        (uint _r0, uint _r1,) = IUniswapV2Pair(pair).getReserves();
+        if (IUniswapV2Pair(pair).token0() == reserve) {
+            return _r0;
+        } else if (IUniswapV2Pair(pair).token1() == reserve) {
+            return _r1;
+        } else {
+            return 0;
+        }
+    }
+}
+
+interface IUniswapV2Pair {
+    event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
+
+    function name() external pure returns (string memory);
+    function symbol() external pure returns (string memory);
+    function decimals() external pure returns (uint8);
+    function totalSupply() external view returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint value) external returns (bool);
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
+    function nonces(address owner) external view returns (uint);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Swap(
+        address indexed sender,
+        uint amount0In,
+        uint amount1In,
+        uint amount0Out,
+        uint amount1Out,
+        address indexed to
+    );
+    event Sync(uint112 reserve0, uint112 reserve1);
+
+    function MINIMUM_LIQUIDITY() external pure returns (uint);
+    function factory() external view returns (address);
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function price0CumulativeLast() external view returns (uint);
+    function price1CumulativeLast() external view returns (uint);
+    function kLast() external view returns (uint);
+
+    function mint(address to) external returns (uint liquidity);
+    function burn(address to) external returns (uint amount0, uint amount1);
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function skim(address to) external;
+    function sync() external;
+
+    function initialize(address, address) external;
+}
+
+interface IGovernance {
+    function proposeJob(address job) external;
+}
+
+interface IKeep3rV1Helper {
+    function getQuoteLimit(uint gasUsed) external view returns (uint);
+}
+
+contract Keep3rV1 is ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
     /// @notice Keep3r Helper to set max prices for the ecosystem
-    IKeep3rHelper public KPRH;
+    IKeep3rV1Helper public KPRH;
 
     /// @notice EIP-20 token name for this token
-    string public constant name = "Keep3r";
+    string public constant name = "Keep3rV1";
 
     /// @notice EIP-20 token symbol for this token
-    string public constant symbol = "KPR";
+    string public constant symbol = "KPRv1";
 
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
@@ -910,7 +974,7 @@ contract Keep3r is ReentrancyGuard {
         require(liquidityAccepted[liquidity], "addLiquidityToJob: !pair");
         require(liquidityApplied[provider][liquidity][job] != 0, "credit: no bond");
         require(liquidityApplied[provider][liquidity][job] < now, "credit: bonding");
-        uint _liquidity = balances[address(liquidity)];
+        uint _liquidity = Keep3rV1Library.getReserve(liquidity, address(this));
         uint _credit = _liquidity.mul(liquidityAmount[provider][liquidity][job]).div(IERC20(liquidity).totalSupply());
         _mint(address(this), _credit);
         credits[job][address(this)] = credits[job][address(this)].add(_credit);
@@ -931,7 +995,7 @@ contract Keep3r is ReentrancyGuard {
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = liquidityAmountsUnbonding[msg.sender][liquidity][job].add(amount);
         require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "unbondLiquidityFromJob: insufficient funds");
 
-        uint _liquidity = balances[address(liquidity)];
+        uint _liquidity = Keep3rV1Library.getReserve(liquidity, address(this));
         uint _credit = _liquidity.mul(amount).div(IERC20(liquidity).totalSupply());
         if (_credit > credits[job][address(this)]) {
             _burn(address(this), credits[job][address(this)]);
@@ -1093,7 +1157,7 @@ contract Keep3r is ReentrancyGuard {
      * @notice Allows governance to change the Keep3rHelper for max spend
      * @param _kprh new helper address to set
      */
-    function setKeep3rHelper(IKeep3rHelper _kprh) external {
+    function setKeep3rHelper(IKeep3rV1Helper _kprh) external {
         require(msg.sender == governance, "setKeep3rHelper: !gov");
         KPRH = _kprh;
     }
