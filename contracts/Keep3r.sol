@@ -765,15 +765,11 @@ contract Keep3rV1 is ReentrancyGuard {
     uint constant public BOND = 3 days;
     /// @notice 14 days to unbond to remove funds from being a keeper
     uint constant public UNBOND = 14 days;
-    /// @notice 7 days maximum downtime before being slashed
-    uint constant public DOWNTIME = 7 days;
     /// @notice 3 days till liquidity can be bound
     uint constant public LIQUIDITYBOND = 3 days;
 
     /// @notice direct liquidity fee 0.3%
     uint constant public FEE = 30;
-    /// @notice 5% of funds slashed for downtime
-    uint constant public DOWNTIMESLASH = 500;
     uint constant public BASE = 10000;
 
     /// @notice address used for ETH transfers
@@ -1293,24 +1289,6 @@ contract Keep3rV1 is ReentrancyGuard {
         }
         emit KeeperUnbound(msg.sender, block.number, block.timestamp, partialUnbonding[msg.sender][bonding]);
         partialUnbonding[msg.sender][bonding] = 0;
-    }
-
-    /**
-     * @notice slash a keeper for downtime
-     * @param keeper the address being slashed
-     */
-    function down(address keeper) external {
-        require(keepers[msg.sender], "down: !keeper");
-        require(keepers[keeper], "down: msg.sender !keeper");
-        require(lastJob[keeper].add(DOWNTIME) < now, "down: safe");
-        uint _slash = bonds[keeper][address(this)].mul(DOWNTIMESLASH).div(BASE);
-
-        _unbond(address(this), keeper, _slash);
-        _bond(address(this), msg.sender, _slash);
-
-        lastJob[keeper] = now;
-        lastJob[msg.sender] = now;
-        emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
     }
 
     /**
