@@ -1,14 +1,144 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.6.6;
-
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
-import "./ReentrancyGuard.sol";
-import "./interfaces/IKeep3rV1Helper.sol";
-import "./interfaces/IGovernance.sol";
-import "./libraries/Keep3rV1Library.sol";
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.12;
+
+// From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/Math.sol
+// Subject to the MIT license.
+
+/**
+ * @dev Contract module that helps prevent reentrant calls to a function.
+ *
+ * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
+ * available, which can be applied to functions to make sure there are no nested
+ * (reentrant) calls to them.
+ *
+ * Note that because there is a single `nonReentrant` guard, functions marked as
+ * `nonReentrant` may not call one another. This can be worked around by making
+ * those functions `private`, and then adding `external` `nonReentrant` entry
+ * points to them.
+ *
+ * TIP: If you would like to learn more about reentrancy and alternative ways
+ * to protect against it, check out our blog post
+ * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
+ */
+contract ReentrancyGuard {
+    // Booleans are more expensive than uint256 or any type that takes up a full
+    // word because each write operation emits an extra SLOAD to first read the
+    // slot's contents, replace the bits taken up by the boolean, and then write
+    // back. This is the compiler's defense against contract upgrades and
+    // pointer aliasing, and it cannot be disabled.
+
+    // The values being non-zero value makes deployment a bit more expensive,
+    // but in exchange the refund on every call to nonReentrant will be lower in
+    // amount. Since refunds are capped to a percentage of the total
+    // transaction's gas, it is best to keep them low in cases like this one, to
+    // increase the likelihood of the full refund coming into effect.
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor () internal {
+        _status = _NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and make it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _status = _ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _status = _NOT_ENTERED;
+    }
+}
+
+
+library Keep3rV1Library {
+    function getReserve(address pair, address reserve) external view returns (uint) {
+        (uint _r0, uint _r1,) = IUniswapV2Pair(pair).getReserves();
+        if (IUniswapV2Pair(pair).token0() == reserve) {
+            return _r0;
+        } else if (IUniswapV2Pair(pair).token1() == reserve) {
+            return _r1;
+        } else {
+            return 0;
+        }
+    }
+}
+
+interface IUniswapV2Pair {
+    event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
+
+    function name() external pure returns (string memory);
+    function symbol() external pure returns (string memory);
+    function decimals() external pure returns (uint8);
+    function totalSupply() external view returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint value) external returns (bool);
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
+    function nonces(address owner) external view returns (uint);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Swap(
+        address indexed sender,
+        uint amount0In,
+        uint amount1In,
+        uint amount0Out,
+        uint amount1Out,
+        address indexed to
+    );
+    event Sync(uint112 reserve0, uint112 reserve1);
+
+    function MINIMUM_LIQUIDITY() external pure returns (uint);
+    function factory() external view returns (address);
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function price0CumulativeLast() external view returns (uint);
+    function price1CumulativeLast() external view returns (uint);
+    function kLast() external view returns (uint);
+
+    function mint(address to) external returns (uint liquidity);
+    function burn(address to) external returns (uint amount0, uint amount1);
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function skim(address to) external;
+    function sync() external;
+
+    function initialize(address, address) external;
+}
+
+interface IGovernance {
+    function proposeJob(address job) external;
+}
+
+interface IKeep3rV1Helper {
+    function getQuoteLimit(uint gasUsed) external view returns (uint);
+}
 
 contract Keep3rV1 is ReentrancyGuard {
     using SafeMath for uint;
