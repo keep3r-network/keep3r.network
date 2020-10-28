@@ -1233,7 +1233,9 @@ contract Keep3rV1 is ReentrancyGuard {
         if (bonding == address(this)) {
             _transferTokens(msg.sender, address(this), amount);
         } else {
+            uint _before = IERC20(bonding).balanceOf(address(this));
             IERC20(bonding).safeTransferFrom(msg.sender, address(this), amount);
+            amount = IERC20(bonding).balanceOf(address(this)).sub(_before);
         }
         pendingbonds[msg.sender][bonding] = pendingbonds[msg.sender][bonding].add(amount);
         emit KeeperBonding(msg.sender, block.number, bondings[msg.sender][bonding], amount);
