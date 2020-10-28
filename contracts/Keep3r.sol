@@ -654,16 +654,16 @@ contract Keep3r is ReentrancyGuard {
     event Approval(address indexed owner, address indexed spender, uint amount);
 
     /// @notice Submit a job
-    event SubmitJob(address indexed job, address indexed provider, uint block, uint credit);
+    event SubmitJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Apply credit to a job
-    event ApplyCredit(address indexed job, address indexed provider, uint block, uint credit);
+    event ApplyCredit(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Remove credit for a job
-    event RemoveJob(address indexed job, address indexed provider, uint block, uint credit);
+    event RemoveJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Unbond credit for a job
-    event UnbondJob(address indexed job, address indexed provider, uint block, uint credit);
+    event UnbondJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Added a Job
     event JobAdded(address indexed job, uint block, address governance);
@@ -897,7 +897,7 @@ contract Keep3r is ReentrancyGuard {
             IGovernance(governance).proposeJob(job);
             jobProposalDelay[job] = now.add(UNBOND);
         }
-        emit SubmitJob(job, msg.sender, block.number, amount);
+        emit SubmitJob(job, liquidity, msg.sender, block.number, amount);
     }
 
     /**
@@ -916,7 +916,7 @@ contract Keep3r is ReentrancyGuard {
         credits[job][address(this)] = credits[job][address(this)].add(_credit);
         liquidityAmount[provider][liquidity][job] = 0;
 
-        emit ApplyCredit(job, provider, block.number, _credit);
+        emit ApplyCredit(job, liquidity, provider, block.number, _credit);
     }
 
     /**
@@ -941,7 +941,7 @@ contract Keep3r is ReentrancyGuard {
             credits[job][address(this)] = credits[job][address(this)].sub(_credit);
         }
 
-        emit UnbondJob(job, msg.sender, block.number, amount);
+        emit UnbondJob(job, liquidity, msg.sender, block.number, amount);
     }
 
     /**
@@ -957,7 +957,7 @@ contract Keep3r is ReentrancyGuard {
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
         IERC20(liquidity).safeTransfer(msg.sender, _amount);
 
-        emit RemoveJob(job, msg.sender, block.number, _amount);
+        emit RemoveJob(job, liquidity, msg.sender, block.number, _amount);
     }
 
     /**
