@@ -88,7 +88,9 @@ To add credits, you simply need to have KPR-WETH LP tokens, you then call ```add
 ## Beta Addresses
 Description | Address
 --- | ---
-Keep3r | [0xB63650C42d6fCcA02f5353A711cB85400dB6a8FE](https://etherscan.io/address/0xB63650C42d6fCcA02f5353A711cB85400dB6a8FE) (rc.1.1-a)  
+Keep3rV1 | [0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44](https://etherscan.io/address/0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44) (rc.1.2-a)  
+Keep3rV1Library | [0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1](https://etherscan.io/address/0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1)
+Keep3rV1Helper | [0xb41772890c8B1564c5015A12c0dC6f18B0aF955e](https://etherscan.io/address/0xb41772890c8b1564c5015a12c0dc6f18b0af955e)
 Governance | [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9) (Deprecated)  
 Keep3rJob | [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/address/0xb68e7deb279eaa11f234dff4931458d2c002d10d) (Deprecated)  
 
@@ -96,8 +98,9 @@ Keep3rJob | [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/ad
 
 Job | Address
 --- | ---
-UniQuote | [0x61da8b0808CEA5281A912Cd85421A6D12261D136](https://etherscan.io/address/0x61da8b0808cea5281a912cd85421a6d12261d136)  
-Keep3rOracle | [0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23](https://etherscan.io/address/0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23#code)  
+UniQuote | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan.io/address/0x127a2975c4E1c75f1ed4757a861bbd42523DB035)  
+AaveLiquidate | [0x5D18A46371e313fdC3BB66E77b10405087536e75](https://etherscan.io/address/0x5d18a46371e313fdc3bb66e77b10405087536e75)  
+Keep3rOracle | [0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23](https://etherscan.io/address/0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23#code) (Deprecated)
 
 ## Pairs  
 
@@ -115,4 +118,5 @@ MKR | 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2
 AAVE | 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9  
 SNX | 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F  
 COMP | 0xc00e94Cb662C3520282E6f5717214004A7f26888  
-KPR | 0xb920eBcf540BE36215dF3211E095fAbe15412B5B  
+CRV | 0xD533a949740bb3306d119CC777fa900bA034cd52  
+KPR | 0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44  

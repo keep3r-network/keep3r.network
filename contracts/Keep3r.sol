@@ -1,11 +1,190 @@
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/utils/Address.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
+
+// From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/Math.sol
+// Subject to the MIT license.
+
+/**
+ * @dev Wrappers over Solidity's arithmetic operations with added overflow
+ * checks.
+ *
+ * Arithmetic operations in Solidity wrap on overflow. This can easily result
+ * in bugs, because programmers usually assume that an overflow raises an
+ * error, which is the standard behavior in high level programming languages.
+ * `SafeMath` restores this intuition by reverting the transaction when an
+ * operation overflows.
+ *
+ * Using this library instead of the unchecked operations eliminates an entire
+ * class of bugs, so it's recommended to use it always.
+ */
+library SafeMath {
+    /**
+     * @dev Returns the addition of two unsigned integers, reverting on overflow.
+     *
+     * Counterpart to Solidity's `+` operator.
+     *
+     * Requirements:
+     * - Addition cannot overflow.
+     */
+    function add(uint a, uint b) internal pure returns (uint) {
+        uint c = a + b;
+        require(c >= a, "add: +");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the addition of two unsigned integers, reverting with custom message on overflow.
+     *
+     * Counterpart to Solidity's `+` operator.
+     *
+     * Requirements:
+     * - Addition cannot overflow.
+     */
+    function add(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
+        uint c = a + b;
+        require(c >= a, errorMessage);
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting on underflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     * - Subtraction cannot underflow.
+     */
+    function sub(uint a, uint b) internal pure returns (uint) {
+        return sub(a, b, "sub: -");
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on underflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     * - Subtraction cannot underflow.
+     */
+    function sub(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
+        require(b <= a, errorMessage);
+        uint c = a - b;
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the multiplication of two unsigned integers, reverting on overflow.
+     *
+     * Counterpart to Solidity's `*` operator.
+     *
+     * Requirements:
+     * - Multiplication cannot overflow.
+     */
+    function mul(uint a, uint b) internal pure returns (uint) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        uint c = a * b;
+        require(c / a == b, "mul: *");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the multiplication of two unsigned integers, reverting on overflow.
+     *
+     * Counterpart to Solidity's `*` operator.
+     *
+     * Requirements:
+     * - Multiplication cannot overflow.
+     */
+    function mul(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        uint c = a * b;
+        require(c / a == b, errorMessage);
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers.
+     * Reverts on division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function div(uint a, uint b) internal pure returns (uint) {
+        return div(a, b, "div: /");
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers.
+     * Reverts with custom message on division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function div(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
+        // Solidity only automatically asserts when dividing by 0
+        require(b > 0, errorMessage);
+        uint c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function mod(uint a, uint b) internal pure returns (uint) {
+        return mod(a, b, "mod: %");
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts with custom message when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function mod(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
+        require(b != 0, errorMessage);
+        return a % b;
+    }
+}
 
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
@@ -66,26 +245,303 @@ contract ReentrancyGuard {
     }
 }
 
-interface IGovernance {
-    function proposeJob(address job) external returns (uint);
+/**
+ * @dev Interface of the ERC20 standard as defined in the EIP.
+ */
+interface IERC20 {
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-interface IKeep3rHelper {
+/**
+ * @dev Collection of functions related to the address type
+ */
+library Address {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * [IMPORTANT]
+     * ====
+     * It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     *
+     * Among others, `isContract` will return false for the following
+     * types of addresses:
+     *
+     *  - an externally-owned account
+     *  - a contract in construction
+     *  - an address where a contract will be created
+     *  - an address where a contract lived, but was destroyed
+     * ====
+     */
+    function isContract(address account) internal view returns (bool) {
+        // According to EIP-1052, 0x0 is the value returned for not-yet created accounts
+        // and 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470 is returned
+        // for accounts without code, i.e. `keccak256('')`
+        bytes32 codehash;
+        bytes32 accountHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { codehash := extcodehash(account) }
+        return (codehash != accountHash && codehash != 0x0);
+    }
+
+    /**
+     * @dev Converts an `address` into `address payable`. Note that this is
+     * simply a type cast: the actual underlying value is not changed.
+     *
+     * _Available since v2.4.0._
+     */
+    function toPayable(address account) internal pure returns (address payable) {
+        return address(uint160(account));
+    }
+
+    /**
+     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
+     * `recipient`, forwarding all available gas and reverting on errors.
+     *
+     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
+     * of certain opcodes, possibly making contracts go over the 2300 gas limit
+     * imposed by `transfer`, making them unable to receive funds via
+     * `transfer`. {sendValue} removes this limitation.
+     *
+     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     *
+     * IMPORTANT: because control is transferred to `recipient`, care must be
+     * taken to not create reentrancy vulnerabilities. Consider using
+     * {ReentrancyGuard} or the
+     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     *
+     * _Available since v2.4.0._
+     */
+    function sendValue(address payable recipient, uint256 amount) internal {
+        require(address(this).balance >= amount, "Address: insufficient");
+
+        // solhint-disable-next-line avoid-call-value
+        (bool success, ) = recipient.call{value:amount}("");
+        require(success, "Address: reverted");
+    }
+}
+
+/**
+ * @title SafeERC20
+ * @dev Wrappers around ERC20 operations that throw on failure (when the token
+ * contract returns false). Tokens that return no value (and instead revert or
+ * throw on failure) are also supported, non-reverting calls are assumed to be
+ * successful.
+ * To use this library you can add a `using SafeERC20 for ERC20;` statement to your contract,
+ * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
+ */
+library SafeERC20 {
+    using SafeMath for uint256;
+    using Address for address;
+
+    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+        callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    }
+
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+        callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+    }
+
+    function safeApprove(IERC20 token, address spender, uint256 value) internal {
+        // safeApprove should only be called when setting an initial allowance,
+        // or when resetting it to zero. To increase and decrease it, use
+        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
+        // solhint-disable-next-line max-line-length
+        require((value == 0) || (token.allowance(address(this), spender) == 0),
+            "SafeERC20: approve from non-zero to non-zero allowance"
+        );
+        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
+    }
+
+    function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        uint256 newAllowance = token.allowance(address(this), spender).add(value);
+        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+    }
+
+    function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
+        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: < 0");
+        callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
+    }
+
+    /**
+     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
+     * on the return value: the return value is optional (but if data is returned, it must not be false).
+     * @param token The token targeted by the call.
+     * @param data The call data (encoded using abi.encode or one of its variants).
+     */
+    function callOptionalReturn(IERC20 token, bytes memory data) private {
+        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
+        // we're implementing it ourselves.
+
+        // A Solidity high level call has three parts:
+        //  1. The target address is checked to verify it contains contract code
+        //  2. The call itself is made, and success asserted
+        //  3. The return value is decoded, which in turn checks the size of the returned data.
+        // solhint-disable-next-line max-line-length
+        require(address(token).isContract(), "SafeERC20: !contract");
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory returndata) = address(token).call(data);
+        require(success, "SafeERC20: low-level call failed");
+
+        if (returndata.length > 0) { // Return data is optional
+            // solhint-disable-next-line max-line-length
+            require(abi.decode(returndata, (bool)), "SafeERC20: !succeed");
+        }
+    }
+}
+
+library Keep3rV1Library {
+    function getReserve(address pair, address reserve) external view returns (uint) {
+        (uint _r0, uint _r1,) = IUniswapV2Pair(pair).getReserves();
+        if (IUniswapV2Pair(pair).token0() == reserve) {
+            return _r0;
+        } else if (IUniswapV2Pair(pair).token1() == reserve) {
+            return _r1;
+        } else {
+            return 0;
+        }
+    }
+}
+
+interface IUniswapV2Pair {
+    event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
+
+    function name() external pure returns (string memory);
+    function symbol() external pure returns (string memory);
+    function decimals() external pure returns (uint8);
+    function totalSupply() external view returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint value) external returns (bool);
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    function PERMIT_TYPEHASH() external pure returns (bytes32);
+    function nonces(address owner) external view returns (uint);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Swap(
+        address indexed sender,
+        uint amount0In,
+        uint amount1In,
+        uint amount0Out,
+        uint amount1Out,
+        address indexed to
+    );
+    event Sync(uint112 reserve0, uint112 reserve1);
+
+    function MINIMUM_LIQUIDITY() external pure returns (uint);
+    function factory() external view returns (address);
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function price0CumulativeLast() external view returns (uint);
+    function price1CumulativeLast() external view returns (uint);
+    function kLast() external view returns (uint);
+
+    function mint(address to) external returns (uint liquidity);
+    function burn(address to) external returns (uint amount0, uint amount1);
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function skim(address to) external;
+    function sync() external;
+
+    function initialize(address, address) external;
+}
+
+interface IGovernance {
+    function proposeJob(address job) external;
+}
+
+interface IKeep3rV1Helper {
     function getQuoteLimit(uint gasUsed) external view returns (uint);
 }
 
-contract Keep3r is ReentrancyGuard {
+contract Keep3rV1 is ReentrancyGuard {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
     /// @notice Keep3r Helper to set max prices for the ecosystem
-    IKeep3rHelper public KPRH;
+    IKeep3rV1Helper public KPRH;
 
     /// @notice EIP-20 token name for this token
-    string public constant name = "Keep3r";
+    string public constant name = "Keep3rV1";
 
     /// @notice EIP-20 token symbol for this token
-    string public constant symbol = "KPR";
+    string public constant symbol = "KPRv1";
 
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
@@ -107,6 +563,7 @@ contract Keep3r is ReentrancyGuard {
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint chainId,address verifyingContract)");
+    bytes32 public immutable DOMAINSEPARATOR;
 
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint nonce,uint expiry)");
@@ -135,7 +592,7 @@ contract Keep3r is ReentrancyGuard {
      * @param delegatee The address to delegate votes to
      */
     function delegate(address delegatee) public {
-        return _delegate(msg.sender, delegatee);
+        _delegate(msg.sender, delegatee);
     }
 
     /**
@@ -148,14 +605,13 @@ contract Keep3r is ReentrancyGuard {
      * @param s Half of the ECDSA signature pair
      */
     function delegateBySig(address delegatee, uint nonce, uint expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAINSEPARATOR, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "delegateBySig: sig");
         require(nonce == nonces[signatory]++, "delegateBySig: nonce");
         require(now <= expiry, "delegateBySig: expired");
-        return _delegate(signatory, delegatee);
+        _delegate(signatory, delegatee);
     }
 
     /**
@@ -262,16 +718,16 @@ contract Keep3r is ReentrancyGuard {
     event Approval(address indexed owner, address indexed spender, uint amount);
 
     /// @notice Submit a job
-    event SubmitJob(address indexed job, address indexed provider, uint block, uint credit);
+    event SubmitJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Apply credit to a job
-    event ApplyCredit(address indexed job, address indexed provider, uint block, uint credit);
+    event ApplyCredit(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Remove credit for a job
-    event RemoveJob(address indexed job, address indexed provider, uint block, uint credit);
+    event RemoveJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Unbond credit for a job
-    event UnbondJob(address indexed job, address indexed provider, uint block, uint credit);
+    event UnbondJob(address indexed job, address indexed liquidity, address indexed provider, uint block, uint credit);
 
     /// @notice Added a Job
     event JobAdded(address indexed job, uint block, address governance);
@@ -309,15 +765,11 @@ contract Keep3r is ReentrancyGuard {
     uint constant public BOND = 3 days;
     /// @notice 14 days to unbond to remove funds from being a keeper
     uint constant public UNBOND = 14 days;
-    /// @notice 7 days maximum downtime before being slashed
-    uint constant public DOWNTIME = 7 days;
     /// @notice 3 days till liquidity can be bound
     uint constant public LIQUIDITYBOND = 3 days;
 
     /// @notice direct liquidity fee 0.3%
     uint constant public FEE = 30;
-    /// @notice 5% of funds slashed for downtime
-    uint constant public DOWNTIMESLASH = 500;
     uint constant public BASE = 10000;
 
     /// @notice address used for ETH transfers
@@ -389,6 +841,7 @@ contract Keep3r is ReentrancyGuard {
     constructor() public {
         // Set governance for this token
         governance = msg.sender;
+        DOMAINSEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
     }
 
     /**
@@ -504,7 +957,7 @@ contract Keep3r is ReentrancyGuard {
             IGovernance(governance).proposeJob(job);
             jobProposalDelay[job] = now.add(UNBOND);
         }
-        emit SubmitJob(job, msg.sender, block.number, amount);
+        emit SubmitJob(job, liquidity, msg.sender, block.number, amount);
     }
 
     /**
@@ -517,13 +970,13 @@ contract Keep3r is ReentrancyGuard {
         require(liquidityAccepted[liquidity], "addLiquidityToJob: !pair");
         require(liquidityApplied[provider][liquidity][job] != 0, "credit: no bond");
         require(liquidityApplied[provider][liquidity][job] < now, "credit: bonding");
-        uint _liquidity = balances[address(liquidity)];
+        uint _liquidity = Keep3rV1Library.getReserve(liquidity, address(this));
         uint _credit = _liquidity.mul(liquidityAmount[provider][liquidity][job]).div(IERC20(liquidity).totalSupply());
         _mint(address(this), _credit);
         credits[job][address(this)] = credits[job][address(this)].add(_credit);
         liquidityAmount[provider][liquidity][job] = 0;
 
-        emit ApplyCredit(job, provider, block.number, _credit);
+        emit ApplyCredit(job, liquidity, provider, block.number, _credit);
     }
 
     /**
@@ -538,7 +991,7 @@ contract Keep3r is ReentrancyGuard {
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = liquidityAmountsUnbonding[msg.sender][liquidity][job].add(amount);
         require(liquidityAmountsUnbonding[msg.sender][liquidity][job] <= liquidityProvided[msg.sender][liquidity][job], "unbondLiquidityFromJob: insufficient funds");
 
-        uint _liquidity = balances[address(liquidity)];
+        uint _liquidity = Keep3rV1Library.getReserve(liquidity, address(this));
         uint _credit = _liquidity.mul(amount).div(IERC20(liquidity).totalSupply());
         if (_credit > credits[job][address(this)]) {
             _burn(address(this), credits[job][address(this)]);
@@ -548,7 +1001,7 @@ contract Keep3r is ReentrancyGuard {
             credits[job][address(this)] = credits[job][address(this)].sub(_credit);
         }
 
-        emit UnbondJob(job, msg.sender, block.number, amount);
+        emit UnbondJob(job, liquidity, msg.sender, block.number, amount);
     }
 
     /**
@@ -564,7 +1017,7 @@ contract Keep3r is ReentrancyGuard {
         liquidityAmountsUnbonding[msg.sender][liquidity][job] = 0;
         IERC20(liquidity).safeTransfer(msg.sender, _amount);
 
-        emit RemoveJob(job, msg.sender, block.number, _amount);
+        emit RemoveJob(job, liquidity, msg.sender, block.number, _amount);
     }
 
     /**
@@ -700,7 +1153,7 @@ contract Keep3r is ReentrancyGuard {
      * @notice Allows governance to change the Keep3rHelper for max spend
      * @param _kprh new helper address to set
      */
-    function setKeep3rHelper(IKeep3rHelper _kprh) external {
+    function setKeep3rHelper(IKeep3rV1Helper _kprh) external {
         require(msg.sender == governance, "setKeep3rHelper: !gov");
         KPRH = _kprh;
     }
@@ -776,7 +1229,9 @@ contract Keep3r is ReentrancyGuard {
         if (bonding == address(this)) {
             _transferTokens(msg.sender, address(this), amount);
         } else {
+            uint _before = IERC20(bonding).balanceOf(address(this));
             IERC20(bonding).safeTransferFrom(msg.sender, address(this), amount);
+            amount = IERC20(bonding).balanceOf(address(this)).sub(_before);
         }
         pendingbonds[msg.sender][bonding] = pendingbonds[msg.sender][bonding].add(amount);
         emit KeeperBonding(msg.sender, block.number, bondings[msg.sender][bonding], amount);
@@ -834,24 +1289,6 @@ contract Keep3r is ReentrancyGuard {
         }
         emit KeeperUnbound(msg.sender, block.number, block.timestamp, partialUnbonding[msg.sender][bonding]);
         partialUnbonding[msg.sender][bonding] = 0;
-    }
-
-    /**
-     * @notice slash a keeper for downtime
-     * @param keeper the address being slashed
-     */
-    function down(address keeper) external {
-        require(keepers[msg.sender], "down: !keeper");
-        require(keepers[keeper], "down: msg.sender !keeper");
-        require(lastJob[keeper].add(DOWNTIME) < now, "down: safe");
-        uint _slash = bonds[keeper][address(this)].mul(DOWNTIMESLASH).div(BASE);
-
-        _unbond(address(this), keeper, _slash);
-        _bond(address(this), msg.sender, _slash);
-
-        lastJob[keeper] = now;
-        lastJob[msg.sender] = now;
-        emit KeeperSlashed(keeper, msg.sender, block.number, _slash);
     }
 
     /**
@@ -939,9 +1376,8 @@ contract Keep3r is ReentrancyGuard {
      * @param s Half of the ECDSA signature pair
      */
     function permit(address owner, address spender, uint amount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
         bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, amount, nonces[owner]++, deadline));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAINSEPARATOR, structHash));
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "permit: signature");
         require(signatory == owner, "permit: unauthorized");
@@ -998,8 +1434,8 @@ contract Keep3r is ReentrancyGuard {
         require(src != address(0), "_transferTokens: zero address");
         require(dst != address(0), "_transferTokens: zero address");
 
-        balances[src] = balances[src].sub(amount);
-        balances[dst] = balances[dst].add(amount);
+        balances[src] = balances[src].sub(amount, "_transferTokens: exceeds balance");
+        balances[dst] = balances[dst].add(amount, "_transferTokens: overflows");
         emit Transfer(src, dst, amount);
     }
 
