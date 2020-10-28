@@ -246,7 +246,7 @@ contract ReentrancyGuard {
 }
 
 interface IGovernance {
-    function proposeJob(address job) external returns (uint);
+    function proposeJob(address job) external;
 }
 
 interface IKeep3rHelper {
@@ -528,7 +528,7 @@ contract Keep3r is ReentrancyGuard {
      * @param delegatee The address to delegate votes to
      */
     function delegate(address delegatee) public {
-        return _delegate(msg.sender, delegatee);
+        _delegate(msg.sender, delegatee);
     }
 
     /**
@@ -547,7 +547,7 @@ contract Keep3r is ReentrancyGuard {
         require(signatory != address(0), "delegateBySig: sig");
         require(nonce == nonces[signatory]++, "delegateBySig: nonce");
         require(now <= expiry, "delegateBySig: expired");
-        return _delegate(signatory, delegatee);
+        _delegate(signatory, delegatee);
     }
 
     /**
