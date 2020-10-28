@@ -99,6 +99,7 @@ Keep3rJob | [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/ad
 Job | Address
 --- | ---
 UniQuote | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan.io/address/0x127a2975c4E1c75f1ed4757a861bbd42523DB035)  
+AaveLiquidate | [0x5D18A46371e313fdC3BB66E77b10405087536e75](https://etherscan.io/address/0x5d18a46371e313fdc3bb66e77b10405087536e75)  
 Keep3rOracle | [0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23](https://etherscan.io/address/0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23#code) (Deprecated)
 
 ## Pairs  
