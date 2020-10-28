@@ -88,8 +88,8 @@ To add credits, you simply need to have KPR-WETH LP tokens, you then call ```add
 ## Beta Addresses
 Description | Address
 --- | ---
-Keep3rV1 | [0x5Bab9eEC479B1991455A89562A2CC7C274C5f95e](https://etherscan.io/address/0x5Bab9eEC479B1991455A89562A2CC7C274C5f95e) (rc.1.2-a)  
-Keep3rV1Library | [0xdaef201BA1bA0354D71848893dD6D56905924C93](https://etherscan.io/address/0xdaef201ba1ba0354d71848893dd6d56905924c93)
+Keep3rV1 | [0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44](https://etherscan.io/address/0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44) (rc.1.2-a)  
+Keep3rV1Library | [0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1](https://etherscan.io/address/0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1)
 Keep3rV1Helper | [0xb41772890c8B1564c5015A12c0dC6f18B0aF955e](https://etherscan.io/address/0xb41772890c8b1564c5015a12c0dc6f18b0af955e)
 Governance | [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9) (Deprecated)  
 Keep3rJob | [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/address/0xb68e7deb279eaa11f234dff4931458d2c002d10d) (Deprecated)  
