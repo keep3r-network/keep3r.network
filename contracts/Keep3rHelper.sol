@@ -1,11 +1,8 @@
-import '@openzeppelin/contracts/math/SafeMath.sol';
-
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity ^0.6.6;
 
-interface IChainLinkFeed {
-    function latestAnswer() external view returns (int256);
-}
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import "./interfaces/IChainLinkFeed.sol";
 
 contract Keep3rHelper {
     using SafeMath for uint;

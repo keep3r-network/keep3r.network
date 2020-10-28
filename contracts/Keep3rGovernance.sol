@@ -1,7 +1,9 @@
-import '@openzeppelin/contracts/math/SafeMath.sol';
-
-pragma solidity ^0.6.12;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
+
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import "./interfaces/DelegateInterface.sol";
 
 contract Governance {
     using SafeMath for uint;
@@ -383,7 +385,7 @@ contract Governance {
         }
 
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = target.call.value(value)(callData);
+        (bool success, bytes memory returnData) = target.call{value: value}(callData);
         require(success, "Timelock::executeTransaction: Transaction execution reverted.");
 
         emit ExecuteTransaction(txHash, target, value, signature, data, eta);
@@ -395,9 +397,4 @@ contract Governance {
         // solium-disable-next-line security/no-block-members
         return block.timestamp;
     }
-}
-
-interface DelegateInterface {
-    function getPriorVotes(address account, uint blockNumber) external view returns (uint);
-    function totalBonded() external view returns (uint);
 }
