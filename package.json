@@ -1,0 +1,33 @@
+{
+  "name": "keep3r",
+  "version": "1.0.0-RC",
+  "description": "Keep3r Network is a decentralized keeper network for projects that need external devops and for external teams to find keeper jobs",
+  "main": "truffle-config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fantom-foundation/keep3r.network.git"
+  },
+  "keywords": [
+    "keeper",
+    "blockchain",
+    "fantom",
+    "opera"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Fantom-foundation/keep3r.network/issues"
+  },
+  "homepage": "https://github.com/Fantom-foundation/keep3r.network#readme"
+}
