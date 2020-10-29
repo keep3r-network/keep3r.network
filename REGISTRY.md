@@ -3,7 +3,7 @@ Description | Address
 --- | ---
 Keep3rV1 | [0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44](https://etherscan.io/address/0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44) (rc.1.2-a)  
 Keep3rV1Library | [0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1](https://etherscan.io/address/0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1)
-Keep3rV1Helper | [0xb41772890c8B1564c5015A12c0dC6f18B0aF955e](https://etherscan.io/address/0xb41772890c8b1564c5015a12c0dc6f18b0af955e)
+Keep3rV1Helper | [0xC952A912c458Be918c2a5344f4ad842fbC365Aa0](https://etherscan.io/address/0xC952A912c458Be918c2a5344f4ad842fbC365Aa0)
 Keep3rV1JobRegistry | [0x7396899638410094B3690F8bd2b56f07fdAb620c](https://etherscan.io/address/0x7396899638410094b3690f8bd2b56f07fdab620c)  
 
 ## Jobs
