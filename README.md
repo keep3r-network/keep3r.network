@@ -91,15 +91,19 @@ Description | Address
 Keep3rV1 | [0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44](https://etherscan.io/address/0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44) (rc.1.2-a)  
 Keep3rV1Library | [0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1](https://etherscan.io/address/0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1)
 Keep3rV1Helper | [0xb41772890c8B1564c5015A12c0dC6f18B0aF955e](https://etherscan.io/address/0xb41772890c8b1564c5015a12c0dc6f18b0af955e)
-Governance | [0xEEFb7264FD804e23eF55478c55105f6E2Bf1EFd9](https://etherscan.io/address/0xeefb7264fd804e23ef55478c55105f6e2bf1efd9) (Deprecated)  
-Keep3rJob | [0xB68E7dEB279EAa11F234DFf4931458d2C002D10D](https://etherscan.io/address/0xb68e7deb279eaa11f234dff4931458d2c002d10d) (Deprecated)  
+Keep3rV1JobRegistry | [0x7396899638410094B3690F8bd2b56f07fdAb620c](https://etherscan.io/address/0x7396899638410094b3690f8bd2b56f07fdab620c)  
 
 ## Jobs
 
 Job | Address
 --- | ---
 UniQuote | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan.io/address/0x127a2975c4E1c75f1ed4757a861bbd42523DB035)  
-AaveLiquidate | [0x5D18A46371e313fdC3BB66E77b10405087536e75](https://etherscan.io/address/0x5d18a46371e313fdc3bb66e77b10405087536e75)  
+
+Deprecated  
+
+Job | Address
+--- | ---
+AaveLiquidate | [0x5D18A46371e313fdC3BB66E77b10405087536e75](https://etherscan.io/address/0x5d18a46371e313fdc3bb66e77b10405087536e75) (Deprecated)  
 Keep3rOracle | [0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23](https://etherscan.io/address/0x2ec4901ebBCE581bBAE029BA6405fcA5ab3B3d23#code) (Deprecated)
 
 ## Pairs  
