@@ -43,7 +43,7 @@ For high, sensitive, or critical risk executions, you can specify a minimum bond
 So a function definition would look as follows;
 ```
 function execute() external {
-  requires(Keep3r.isKeeper(msg.sender), "Keep3r not allowed");
+  require(Keep3r.isKeeper(msg.sender), "Keep3r not allowed");
 }
 ```
 
