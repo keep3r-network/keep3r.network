@@ -5,6 +5,7 @@
 * [Jobs](docs/JOBS.md)
 * [Keepers](docs/Keepers.md)
 * [Governance](docs/Governance.md)
+* [Registry](REGISTRY.md)
 
 * [Technical](docs/Keep3r.md)
 
