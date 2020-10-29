@@ -54,10 +54,6 @@ After waiting ```UNBOND``` days (default 14 days) you can withdraw any bonded as
 function withdraw(address bonding) external
 ```
 
-## Risks of being a Keeper
-
-If you have KPR bonded and have not performed any actions for ```DOWNTIME``` days (default 7 days), you can be slashed for ```DOWNTIMESLASH``` percentage of you bonded KPR (default 5%)
-
 ## Additional Requirements
 
 Some jobs might have additional requirements such as minimum bonded protocol tokens (for example SNX). In such cases you would need to bond a minimum amount of SNX before you may qualify for the job.
