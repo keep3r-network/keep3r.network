@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2020-10-28
+*/
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
@@ -451,8 +455,8 @@ contract AaveLiquidate {
         require(_repay > 0, "No debt");
 
         IERC20(_reserve).safeTransferFrom(msg.sender, address(this), _repay);
-        IERC20(_reserve).safeApprove(CORE, uint256(-1));
-        AAVE.liquidationCall(_collateral, _reserve, _user, _repay, true);
+        IERC20(_reserve).safeApprove(CORE, _repay);
+        AAVE.liquidationCall(_collateral, _reserve, _user, _repay, false);
         IERC20(_reserve).safeApprove(CORE, 0);
 
         uint256 _liquidated = IERC20(_collateral).balanceOf(address(this));
