@@ -12,7 +12,13 @@ Job | Address
 --- | ---
 UniQuote | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan.io/address/0x127a2975c4E1c75f1ed4757a861bbd42523DB035)  
 
-Deprecated  
+### Pending
+
+Job | Address
+--- | ---
+CreamLiquidate | [0x8584b7AC8b1E4255C18784928FBF1C6fCA40CA64](https://etherscan.io/address/0x8584b7ac8b1e4255c18784928fbf1c6fca40ca64)  
+
+### Deprecated  
 
 Job | Address
 --- | ---
