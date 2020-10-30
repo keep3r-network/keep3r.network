@@ -2,15 +2,20 @@
 Description | Address
 --- | ---
 Keep3rV1 | [0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44](https://etherscan.io/address/0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44) (rc.1.2-a)  
-Keep3rV1Library | [0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1](https://etherscan.io/address/0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1)
-Keep3rV1Helper | [0xAb6f27021D72938F9FFd021cE85dd0A6441d9781](https://etherscan.io/address/0xAb6f27021D72938F9FFd021cE85dd0A6441d9781)
+Keep3rV1Library | [0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1](https://etherscan.io/address/0xfc38B6eBA9d47CBFc8C7B4FFfFd142B78996B6f1)  
+Keep3rV1Helper | [0xAb6f27021D72938F9FFd021cE85dd0A6441d9781](https://etherscan.io/address/0xAb6f27021D72938F9FFd021cE85dd0A6441d9781)  
 Keep3rV1JobRegistry | [0x7396899638410094B3690F8bd2b56f07fdAb620c](https://etherscan.io/address/0x7396899638410094b3690f8bd2b56f07fdab620c)  
+Keep3rV1Governance | [0xc7212Fc959bBB606F97036e8Ac3DA7AaBf0cb735](https://etherscan.io/address/0xc7212fc959bbb606f97036e8ac3da7aabf0cb735)  
+Keep3rV1Treasury | [0xf7aa325404f81cf34268657ddf2d046763a8c4ed](https://etherscan.io/address/0xf7aa325404f81cf34268657ddf2d046763a8c4ed)  
 
 ## Jobs
 
 Job | Address
 --- | ---
-UniQuote | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan.io/address/0x127a2975c4E1c75f1ed4757a861bbd42523DB035)  
+UniswapV2Oracle | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan.io/address/0x127a2975c4E1c75f1ed4757a861bbd42523DB035)  
+AaveLiquidations | [0x78C992446a0272056c7f9c47e36b051D772486Dd](https://etherscan.io/address/0x78C992446a0272056c7f9c47e36b051D772486Dd)  
+HegicPoolKeep3r | [0x5DDe926b0A31346f2485900C5e64c2577F43F774](https://etherscan.io/address/0x5DDe926b0A31346f2485900C5e64c2577F43F774)  
+YearnV1EarnKeep3r | [0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C](https://etherscan.io/address/0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C)  
 
 ### Pending
 
