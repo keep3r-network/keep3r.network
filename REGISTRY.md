@@ -21,7 +21,7 @@ YearnV1EarnKeep3r | [0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C](https://ethersc
 
 Job | Address
 --- | ---
-CreamLiquidate | [0x8584b7AC8b1E4255C18784928FBF1C6fCA40CA64](https://etherscan.io/address/0x8584b7ac8b1e4255c18784928fbf1c6fca40ca64)  
+CreamLiquidate | [0xD7De27e74f1Ca2Ce413E19a0B30Fcc95395BFcd9](https://etherscan.io/address/0xd7de27e74f1ca2ce413e19a0b30fcc95395bfcd9)
 
 ### Deprecated  
 
