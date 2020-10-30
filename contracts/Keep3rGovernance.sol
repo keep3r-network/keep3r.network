@@ -187,6 +187,25 @@ library SafeMath {
     }
 }
 
+interface IKeep3rV1 {
+    function addVotes(address voter, uint amount) external;
+    function removeVotes(address voter, uint amount) external;
+    function addKPRCredit(address job, uint amount) external;
+    function approveLiquidity(address liquidity) external;
+    function revokeLiquidity(address liquidity) external;
+    function addJob(address job) external;
+    function removeJob(address job) external;
+    function setKeep3rHelper(address _kprh) external;
+    function setGovernance(address _governance) external;
+    function acceptGovernance() external;
+    function dispute(address keeper) external;
+    function slash(address bonded, address keeper, uint amount) external;
+    function revoke(address keeper) external;
+    function resolve(address keeper) external;
+    function getPriorVotes(address account, uint blockNumber) external view returns (uint);
+    function totalBonded() external view returns (uint);
+}
+
 contract Governance {
     using SafeMath for uint;
     /// @notice The name of this contract
@@ -207,11 +226,11 @@ contract Governance {
     }
 
     function quorumVotes() public view returns (uint) {
-        return VOTER.totalBonded().mul(_quorumVotes).div(BASE);
+        return KPR.totalBonded().mul(_quorumVotes).div(BASE);
     }
 
     function proposalThreshold() public view returns (uint) {
-        return VOTER.totalBonded().mul(_proposalThreshold).div(BASE);
+        return KPR.totalBonded().mul(_proposalThreshold).div(BASE);
     }
 
     function setThreshold(uint threshold_) external {
@@ -230,7 +249,7 @@ contract Governance {
     function votingPeriod() public pure returns (uint) { return 40_320; } // ~7 days in blocks (assuming 15s blocks)
 
     /// @notice The address of the governance token
-    DelegateInterface public VOTER;
+    IKeep3rV1 immutable public KPR;
 
     /// @notice The total number of proposals
     uint public proposalCount;
@@ -302,9 +321,9 @@ contract Governance {
     event ProposalExecuted(uint id);
 
     function proposeJob(address job) public {
-        require(msg.sender == address(VOTER), "Governance::proposeJob: only VOTER can propose new jobs");
+        require(msg.sender == address(KPR), "Governance::proposeJob: only VOTER can propose new jobs");
         address[] memory targets;
-        targets[0] = address(VOTER);
+        targets[0] = address(KPR);
 
         string[] memory signatures;
         signatures[0] = "addJob(address)";
@@ -319,7 +338,7 @@ contract Governance {
     }
 
     function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
-        require(VOTER.getPriorVotes(msg.sender, block.number.sub(1)) >= proposalThreshold(), "Governance::propose: proposer votes below proposal threshold");
+        require(KPR.getPriorVotes(msg.sender, block.number.sub(1)) >= proposalThreshold(), "Governance::propose: proposer votes below proposal threshold");
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "Governance::propose: proposal function information arity mismatch");
         require(targets.length != 0, "Governance::propose: must provide actions");
         require(targets.length <= proposalMaxOperations(), "Governance::propose: too many actions");
@@ -379,6 +398,7 @@ contract Governance {
     }
 
     function execute(uint proposalId) public payable {
+        require(guardian == address(0x0) || msg.sender == guardian, "Governance:execute: !guardian");
         require(state(proposalId) == ProposalState.Queued, "Governance::execute: proposal can only be executed if it is queued");
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
@@ -393,7 +413,8 @@ contract Governance {
         require(state != ProposalState.Executed, "Governance::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
-        require(proposal.proposer != address(VOTER) && VOTER.getPriorVotes(proposal.proposer, block.number.sub(1)) < proposalThreshold(), "Governance::cancel: proposer above threshold");
+        require(proposal.proposer != address(KPR) &&
+                KPR.getPriorVotes(proposal.proposer, block.number.sub(1)) < proposalThreshold(), "Governance::cancel: proposer above threshold");
 
         proposal.canceled = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
@@ -453,7 +474,7 @@ contract Governance {
         Proposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
         require(receipt.hasVoted == false, "Governance::_castVote: voter already voted");
-        uint votes = VOTER.getPriorVotes(voter, proposal.startBlock);
+        uint votes = KPR.getPriorVotes(voter, proposal.startBlock);
 
         if (support) {
             proposal.forVotes = proposal.forVotes.add(votes);
@@ -485,10 +506,81 @@ contract Governance {
 
     uint public delay = MINIMUM_DELAY;
 
+    address public guardian;
+    address public pendingGuardian;
+
+    function setGuardian(address _guardian) external {
+        require(msg.sender == guardian, "Keep3rGovernance::setGuardian: !guardian");
+        pendingGuardian = _guardian;
+    }
+
+    function acceptGuardianship() external {
+        require(msg.sender == pendingGuardian, "Keep3rGovernance::setGuardian: !pendingGuardian");
+        guardian = pendingGuardian;
+    }
+
+    function addVotes(address voter, uint amount) external {
+        require(msg.sender == guardian, "Keep3rGovernance::addVotes: !guardian");
+        KPR.addVotes(voter, amount);
+    }
+    function removeVotes(address voter, uint amount) external {
+        require(msg.sender == guardian, "Keep3rGovernance::removeVotes: !guardian");
+        KPR.removeVotes(voter, amount);
+    }
+    function addKPRCredit(address job, uint amount) external {
+        require(msg.sender == guardian, "Keep3rGovernance::addKPRCredit: !guardian");
+        KPR.addKPRCredit(job, amount);
+    }
+    function approveLiquidity(address liquidity) external {
+        require(msg.sender == guardian, "Keep3rGovernance::approveLiquidity: !guardian");
+        KPR.approveLiquidity(liquidity);
+    }
+    function revokeLiquidity(address liquidity) external {
+        require(msg.sender == guardian, "Keep3rGovernance::revokeLiquidity: !guardian");
+        KPR.revokeLiquidity(liquidity);
+    }
+    function addJob(address job) external {
+        require(msg.sender == guardian, "Keep3rGovernance::addJob: !guardian");
+        KPR.addJob(job);
+    }
+    function removeJob(address job) external {
+        require(msg.sender == guardian, "Keep3rGovernance::removeJob: !guardian");
+        KPR.removeJob(job);
+    }
+    function setKeep3rHelper(address kprh) external {
+        require(msg.sender == guardian, "Keep3rGovernance::setKeep3rHelper: !guardian");
+        KPR.setKeep3rHelper(kprh);
+    }
+    function setGovernance(address _governance) external {
+        require(msg.sender == guardian, "Keep3rGovernance::setGovernance: !guardian");
+        KPR.setGovernance(_governance);
+    }
+    function acceptGovernance() external {
+        require(msg.sender == guardian, "Keep3rGovernance::acceptGovernance: !guardian");
+        KPR.acceptGovernance();
+    }
+    function dispute(address keeper) external {
+        require(msg.sender == guardian, "Keep3rGovernance::dispute: !guardian");
+        KPR.dispute(keeper);
+    }
+    function slash(address bonded, address keeper, uint amount) external {
+        require(msg.sender == guardian, "Keep3rGovernance::slash: !guardian");
+        KPR.slash(bonded, keeper, amount);
+    }
+    function revoke(address keeper) external {
+        require(msg.sender == guardian, "Keep3rGovernance::revoke: !guardian");
+        KPR.revoke(keeper);
+    }
+    function resolve(address keeper) external {
+        require(msg.sender == guardian, "Keep3rGovernance::resolve: !guardian");
+        KPR.resolve(keeper);
+    }
+
     mapping (bytes32 => bool) public queuedTransactions;
 
     constructor(address token_) public {
-        VOTER = DelegateInterface(token_);
+        guardian = msg.sender;
+        KPR = IKeep3rV1(token_);
         DOMAINSEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
     }
 
@@ -548,9 +640,4 @@ contract Governance {
         // solium-disable-next-line security/no-block-members
         return block.timestamp;
     }
-}
-
-interface DelegateInterface {
-    function getPriorVotes(address account, uint blockNumber) external view returns (uint);
-    function totalBonded() external view returns (uint);
 }
