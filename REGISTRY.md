@@ -24,6 +24,7 @@ MetaKeep3r | [0x93Dfa873b15ad496BA8116Ce6CfEC52eF30a9372](https://etherscan.io/a
 
 Job | Address
 --- | ---
+SushiswapV2Keep3r | [0x9B7074139b0860039Da2B32EDeDD158A28166cd3](https://etherscan.io/address/0x9B7074139b0860039Da2B32EDeDD158A28166cd3)
 
 ### Deprecated  
 
