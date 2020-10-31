@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity ^0.5.17;
 
 library SafeMath {
     function add(uint a, uint b) internal pure returns (uint) {
@@ -69,12 +69,12 @@ contract MetaKeep3r {
             KP3R.receipt(address(KP3R), address(this), _received.sub(_balance));
         }
         _received = _swap(_received);
-        payable(msg.sender).transfer(_received);
+        msg.sender.transfer(_received);
     }
 
     function task(address job, bytes calldata data) external upkeep {
         require(KP3R.jobs(job), "MetaKeep3r::work: invalid job");
-        (bool success,) = job.call{value: 0}(data);
+        (bool success,) = job.call.value(0)(data);
         require(success, "MetaKeep3r::work: job failure");
     }
 
@@ -97,7 +97,7 @@ contract MetaKeep3r {
         KP3R.unbond(address(KP3R), KP3R.bonds(address(this), address(KP3R)));
     }
 
-    receive() external payable {}
+    function() external payable {}
 
     function _swap(uint _amount) internal returns (uint) {
         KP3R.approve(address(UNI), _amount);
@@ -107,7 +107,7 @@ contract MetaKeep3r {
         path[1] = address(WETH);
 
         uint[] memory amounts = UNI.swapExactTokensForTokens(_amount, uint256(0), path, address(this), now.add(1800));
-        WETH.withdraw(amounts[0]);
-        return amounts[0];
+        WETH.withdraw(amounts[1]);
+        return amounts[1];
     }
 }
