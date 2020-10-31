@@ -7,6 +7,7 @@ Keep3rV1Helper | [0xAb6f27021D72938F9FFd021cE85dd0A6441d9781](https://etherscan.
 Keep3rV1JobRegistry | [0x7396899638410094B3690F8bd2b56f07fdAb620c](https://etherscan.io/address/0x7396899638410094b3690f8bd2b56f07fdab620c)  
 Keep3rV1Governance | [0xc7212Fc959bBB606F97036e8Ac3DA7AaBf0cb735](https://etherscan.io/address/0xc7212fc959bbb606f97036e8ac3da7aabf0cb735)  
 Keep3rV1Treasury | [0xf7aa325404f81cf34268657ddf2d046763a8c4ed](https://etherscan.io/address/0xf7aa325404f81cf34268657ddf2d046763a8c4ed)  
+MetaKeep3r | [0x93Dfa873b15ad496BA8116Ce6CfEC52eF30a9372](https://etherscan.io/address/0x93dfa873b15ad496ba8116ce6cfec52ef30a9372)
 
 ## Jobs
 
@@ -17,6 +18,7 @@ AaveLiquidations | [0x78C992446a0272056c7f9c47e36b051D772486Dd](https://ethersca
 HegicPoolKeep3r | [0x5DDe926b0A31346f2485900C5e64c2577F43F774](https://etherscan.io/address/0x5DDe926b0A31346f2485900C5e64c2577F43F774)  
 YearnV1EarnKeep3r | [0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C](https://etherscan.io/address/0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C)  
 CreamLiquidate | [0xD7De27e74f1Ca2Ce413E19a0B30Fcc95395BFcd9](https://etherscan.io/address/0xd7de27e74f1ca2ce413e19a0b30fcc95395bfcd9)
+MetaKeep3r | [0x93Dfa873b15ad496BA8116Ce6CfEC52eF30a9372](https://etherscan.io/address/0x93dfa873b15ad496ba8116ce6cfec52ef30a9372)
 
 ### Pending
 
