@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity ^0.5.17;
 
 interface IKeep3rV1 {
     function isKeeper(address) external returns (bool);
@@ -63,11 +63,12 @@ contract SushiswapV2Keep3r {
         return ISushiswapV2Pair(pair).balanceOf(address(SV2M)) > 0;
     }
 
-    function batch(ISushiswapV2Pair[] memory pair) external upkeep {
+    function batch(ISushiswapV2Pair[] calldata pair) external {
         bool _worked = true;
         for (uint i = 0; i < pair.length; i++) {
             if (haveBalance(address(pair[i]))) {
-                SV2M.convert(pair[i].token0(), pair[i].token1());
+                (bool success, bytes memory message) = address(SV2M).delegatecall(abi.encodeWithSignature("convert(address,address)", pair[i].token0(), pair[i].token1()));
+                require(success, string(abi.encodePacked("SushiswapV2Keep3r::convert: failed [", message, "]")));
             } else {
                 _worked = false;
             }
@@ -75,8 +76,9 @@ contract SushiswapV2Keep3r {
         require(_worked, "SushiswapV2Keep3r::batch: job(s) failed");
     }
 
-    function work(ISushiswapV2Pair pair) external upkeep {
+    function work(ISushiswapV2Pair pair) external {
         require(haveBalance(address(pair)), "SushiswapV2Keep3r::work: invalid pair");
-        SV2M.convert(pair.token0(), pair.token1());
+        (bool success, bytes memory message) = address(SV2M).delegatecall(abi.encodeWithSignature("convert(address,address)", pair.token0(), pair.token1()));
+        require(success,  string(abi.encodePacked("SushiswapV2Keep3r::convert: failed [", message, "]")));
     }
 }
