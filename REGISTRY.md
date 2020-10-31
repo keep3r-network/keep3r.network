@@ -16,12 +16,12 @@ UniswapV2Oracle | [0x127a2975c4E1c75f1ed4757a861bbd42523DB035](https://etherscan
 AaveLiquidations | [0x78C992446a0272056c7f9c47e36b051D772486Dd](https://etherscan.io/address/0x78C992446a0272056c7f9c47e36b051D772486Dd)  
 HegicPoolKeep3r | [0x5DDe926b0A31346f2485900C5e64c2577F43F774](https://etherscan.io/address/0x5DDe926b0A31346f2485900C5e64c2577F43F774)  
 YearnV1EarnKeep3r | [0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C](https://etherscan.io/address/0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C)  
+CreamLiquidate | [0xD7De27e74f1Ca2Ce413E19a0B30Fcc95395BFcd9](https://etherscan.io/address/0xd7de27e74f1ca2ce413e19a0b30fcc95395bfcd9)
 
 ### Pending
 
 Job | Address
 --- | ---
-CreamLiquidate | [0xD7De27e74f1Ca2Ce413E19a0B30Fcc95395BFcd9](https://etherscan.io/address/0xd7de27e74f1ca2ce413e19a0b30fcc95395bfcd9)
 
 ### Deprecated  
 

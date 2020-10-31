@@ -402,19 +402,22 @@ interface IKeep3rV1 {
     function worked(address keeper) external;
 }
 
-interface CTokenInterface {
-    function accrueInterest() external returns (uint);
-}
 
 interface ICERC20 {
-    function liquidateBorrow(address borrower, uint repayAmount, CTokenInterface cTokenCollateral) external returns (uint);
+    function liquidateBorrow(address borrower, uint repayAmount, address cTokenCollateral) external returns (uint);
     function borrowBalanceStored(address account) external view returns (uint);
     function underlying() external view returns (address);
+    function symbol() external view returns (string memory);
+}
+
+interface ICEther {
+    function liquidateBorrow(address borrower, address cTokenCollateral) external payable;
+    function borrowBalanceStored(address account) external view returns (uint);
 }
 
 interface IComptroller {
     function getAccountLiquidity(address account) external view returns (uint, uint, uint);
-    function closeFactorMantissa() external view returns (uint256);
+    function closeFactorMantissa() external view returns (uint);
 }
 
 
@@ -432,21 +435,45 @@ contract CreamLiquidate {
 
     IKeep3rV1 public constant KP3R = IKeep3rV1(0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44);
 
-    function liquidate(address _collateral, address _borrow, address _user) external upkeep {
-        (,,uint256 _shortFall) = Comptroller.getAccountLiquidity(_user);
-        require(_shortFall > 0, "!shortFall");
+    function liquidate(address borrower, uint256 _repayAmount, address cTokenBorrow, address cTokenCollateral) external upkeep {
+        (,,uint256 shortFall) = Comptroller.getAccountLiquidity(borrower);
+        require(shortFall > 0, "!shortFall");
 
-        uint256 _to_liquidate = ICERC20(_borrow).borrowBalanceStored(_user);
-        _to_liquidate = _to_liquidate.mul(Comptroller.closeFactorMantissa()).div(1e18);
+        uint256 repayAmount;
+        uint256 liquidatableAmount = ICERC20(cTokenBorrow).borrowBalanceStored(borrower);
+        liquidatableAmount = liquidatableAmount.mul(Comptroller.closeFactorMantissa()).div(1e18);
+        if(_repayAmount == uint256(-1)) {
+            repayAmount = liquidatableAmount;
+        } else {
+            repayAmount = _repayAmount;
+        }
+        require(repayAmount <= liquidatableAmount, ">liquidatableAmount");
 
-        address underlying = ICERC20(_borrow).underlying();
-        IERC20(underlying).safeTransferFrom(msg.sender, address(this), _to_liquidate);
-        IERC20(underlying).safeIncreaseAllowance(_borrow, _to_liquidate);
-        uint256 err = ICERC20(_borrow).liquidateBorrow(_user, _to_liquidate, CTokenInterface(_collateral));
+        address underlying = ICERC20(cTokenBorrow).underlying();
+        IERC20(underlying).safeTransferFrom(msg.sender, address(this), repayAmount);
+        IERC20(underlying).safeIncreaseAllowance(cTokenBorrow, repayAmount);
+        uint256 err = ICERC20(cTokenBorrow).liquidateBorrow(borrower, repayAmount, cTokenCollateral);
         require(err == 0, "failed");
-        uint256 _liquidated = IERC20(_collateral).balanceOf(address(this));
-        require(_liquidated > 0, "failed");
+        uint256 liquidatedAmount = IERC20(cTokenCollateral).balanceOf(address(this));
+        require(liquidatedAmount > 0, "failed");
 
-        IERC20(_collateral).safeTransfer(msg.sender, IERC20(_collateral).balanceOf(address(this)));
+        IERC20(cTokenCollateral).safeTransfer(msg.sender, IERC20(cTokenCollateral).balanceOf(address(this)));
+    }
+
+    function liquidateETH(address borrower, address payable cTokenBorrow, address cTokenCollateral) external payable upkeep {
+        (,,uint256 shortFall) = Comptroller.getAccountLiquidity(borrower);
+        require(shortFall > 0, "!shortFall");
+
+        uint256 liquidatableAmount = ICEther(cTokenBorrow).borrowBalanceStored(borrower);
+        require(msg.value <= liquidatableAmount, ">liquidatableAmount");
+
+        (bool success,) = cTokenBorrow.call{value: msg.value}(
+            abi.encodeWithSignature("liquidateBorrow(address, address)", borrower, cTokenCollateral)
+        );
+        require(success, "failed");
+        uint256 liquidatedAmount = IERC20(cTokenCollateral).balanceOf(address(this));
+        require(liquidatedAmount > 0, "failed");
+
+        IERC20(cTokenCollateral).safeTransfer(msg.sender, IERC20(cTokenCollateral).balanceOf(address(this)));
     }
 }
