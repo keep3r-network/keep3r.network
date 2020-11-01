@@ -1,4 +1,4 @@
-# Introduction to Keep3r Network
+# Introduction to Keep3r Network security and speed
 
 {% hint style="info" %}
 These docs are in active development by the Keep3r community.
