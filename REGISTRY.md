@@ -19,6 +19,8 @@ HegicPoolKeep3r | [0x5DDe926b0A31346f2485900C5e64c2577F43F774](https://etherscan
 YearnV1EarnKeep3r | [0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C](https://etherscan.io/address/0xe7F4ab593aeC81EcA754Da1B3B7cE0C42a13Ec0C)  
 CreamLiquidate | [0xD7De27e74f1Ca2Ce413E19a0B30Fcc95395BFcd9](https://etherscan.io/address/0xd7de27e74f1ca2ce413e19a0b30fcc95395bfcd9)
 MetaKeep3r | [0x93Dfa873b15ad496BA8116Ce6CfEC52eF30a9372](https://etherscan.io/address/0x93dfa873b15ad496ba8116ce6cfec52ef30a9372)
+UniswapV2SlidingOracle | [0xd20b88Ca8bF84Ca829f7A9Cf0eC64e2bFE91c204](https://etherscan.io/address/0xd20b88Ca8bF84Ca829f7A9Cf0eC64e2bFE91c204)  
+CompoundFlashLiquidations | [0x89970Ba0ba9d51f1Ab6d595E6A85E41C9C3806eb](https://etherscan.io/address/0x89970Ba0ba9d51f1Ab6d595E6A85E41C9C3806eb)  
 
 ### Pending
 
