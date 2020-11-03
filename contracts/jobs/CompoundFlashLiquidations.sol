@@ -472,7 +472,7 @@ interface IWETH9 {
     function deposit() external payable;
 }
 
-contract CompoundFlashLiquidate {
+contract CompoundFlashLiquidationsKeep3r {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -483,7 +483,7 @@ contract CompoundFlashLiquidate {
     address constant public cETH = address(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
 
     modifier upkeep() {
-        require(KP3R.isKeeper(msg.sender), "::isKeeper: keeper is not registered");
+        require(KP3R.isMinKeeper(tx.origin, 100e18, 0, 0), "::isKeeper: keeper is not registered");
         _;
         KP3R.worked(msg.sender);
     }
@@ -611,7 +611,16 @@ contract CompoundFlashLiquidate {
         return abi.decode(b, (address, address, address, address, address, address));
     }
 
-    function liquidateCalculated(address borrower, address borrowed, address supplied, address fromPair, address toPair, address borrowedUnderlying, address suppliedUnderlying, uint amount) public {
+    function liquidateCalculated(
+        address borrower,
+        address borrowed,
+        address supplied,
+        address fromPair,
+        address toPair,
+        address borrowedUnderlying,
+        address suppliedUnderlying,
+        uint amount
+    ) public upkeep {
         IERC20(borrowedUnderlying).safeIncreaseAllowance(borrowed, amount);
         (uint _amount0, uint _amount1) = (borrowedUnderlying == IUniswapV2Pair(fromPair).token0() ? (amount, uint(0)) : (uint(0), amount));
         IUniswapV2Pair(fromPair).swap(_amount0, _amount1, address(this), encode(borrower, borrowed, supplied, fromPair, toPair, suppliedUnderlying));
