@@ -1,4 +1,4 @@
-var Tx = require('ethereumjs-tx');
+var Tx = require('ethereumjs-tx').Transaction;
 const Web3 = require('web3');
 const provider = new Web3.providers.HttpProvider(<PROVIDER>);
 const web3 = new Web3(provider);
