@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
 // From https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/Math.sol
@@ -541,7 +540,7 @@ contract Keep3rV1 is ReentrancyGuard {
     string public constant name = "Keep3rV1";
 
     /// @notice EIP-20 token symbol for this token
-    string public constant symbol = "KPRv1";
+    string public constant symbol = "KP3R";
 
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;
@@ -736,7 +735,7 @@ contract Keep3rV1 is ReentrancyGuard {
     event JobRemoved(address indexed job, uint block, address governance);
 
     /// @notice Worked a job
-    event KeeperWorked(address indexed credit, address indexed job, address indexed keeper, uint block);
+    event KeeperWorked(address indexed credit, address indexed job, address indexed keeper, uint block, uint amount);
 
     /// @notice Keeper bonding
     event KeeperBonding(address indexed keeper, uint block, uint active, uint bond);
@@ -838,10 +837,11 @@ contract Keep3rV1 is ReentrancyGuard {
 
     uint internal _gasUsed;
 
-    constructor() public {
+    constructor(address _kph) public {
         // Set governance for this token
         governance = msg.sender;
         DOMAINSEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _getChainId(), address(this)));
+        KPRH = IKeep3rV1Helper(_kph);
     }
 
     /**
@@ -882,6 +882,7 @@ contract Keep3rV1 is ReentrancyGuard {
      */
     function addVotes(address voter, uint amount) external {
         require(msg.sender == governance, "addVotes: !gov");
+        _activate(voter, address(this));
         votes[voter] = votes[voter].add(amount);
         totalBonded = totalBonded.add(amount);
         _moveDelegates(address(0), delegates[voter], amount);
@@ -908,7 +909,7 @@ contract Keep3rV1 is ReentrancyGuard {
         require(msg.sender == governance, "addKPRCredit: !gov");
         require(jobs[job], "addKPRCredit: !job");
         credits[job][address(this)] = credits[job][address(this)].add(amount);
-
+        _mint(address(this), amount);
         emit AddCredit(address(this), job, msg.sender, block.number, amount);
     }
 
@@ -1070,9 +1071,9 @@ contract Keep3rV1 is ReentrancyGuard {
         require(amount <= KPRH.getQuoteLimit(_gasUsed.sub(gasleft())), "workReceipt: max limit");
         credits[msg.sender][address(this)] = credits[msg.sender][address(this)].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
-        _bond(address(this), keeper, amount);
+        _reward(keeper, amount);
         workCompleted[keeper] = workCompleted[keeper].add(amount);
-        emit KeeperWorked(address(this), msg.sender, keeper, block.number);
+        emit KeeperWorked(address(this), msg.sender, keeper, block.number, amount);
     }
 
     /**
@@ -1086,7 +1087,7 @@ contract Keep3rV1 is ReentrancyGuard {
         credits[msg.sender][credit] = credits[msg.sender][credit].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
         IERC20(credit).safeTransfer(keeper, amount);
-        emit KeeperWorked(credit, msg.sender, keeper, block.number);
+        emit KeeperWorked(credit, msg.sender, keeper, block.number, amount);
     }
 
     /**
@@ -1099,7 +1100,14 @@ contract Keep3rV1 is ReentrancyGuard {
         credits[msg.sender][ETH] = credits[msg.sender][ETH].sub(amount, "workReceipt: insuffient funds");
         lastJob[keeper] = now;
         payable(keeper).transfer(amount);
-        emit KeeperWorked(ETH, msg.sender, keeper, block.number);
+        emit KeeperWorked(ETH, msg.sender, keeper, block.number, amount);
+    }
+
+    function _reward(address _from, uint _amount) internal {
+        bonds[_from][address(this)] = bonds[_from][address(this)].add(_amount);
+        totalBonded = totalBonded.add(_amount);
+        _moveDelegates(address(0), delegates[_from], _amount);
+        emit Transfer(msg.sender, _from, _amount);
     }
 
     function _bond(address bonding, address _from, uint _amount) internal {
@@ -1251,15 +1259,19 @@ contract Keep3rV1 is ReentrancyGuard {
     function activate(address bonding) external {
         require(!blacklist[msg.sender], "activate: blacklisted");
         require(bondings[msg.sender][bonding] != 0 && bondings[msg.sender][bonding] < now, "activate: bonding");
-        if (firstSeen[msg.sender] == 0) {
-          firstSeen[msg.sender] = now;
-          keeperList.push(msg.sender);
-          lastJob[msg.sender] = now;
+        _activate(msg.sender, bonding);
+    }
+
+    function _activate(address keeper, address bonding) internal {
+        if (firstSeen[keeper] == 0) {
+          firstSeen[keeper] = now;
+          keeperList.push(keeper);
+          lastJob[keeper] = now;
         }
-        keepers[msg.sender] = true;
-        _bond(bonding, msg.sender, pendingbonds[msg.sender][bonding]);
-        pendingbonds[msg.sender][bonding] = 0;
-        emit KeeperBonded(msg.sender, block.number, block.timestamp, bonds[msg.sender][bonding]);
+        keepers[keeper] = true;
+        _bond(bonding, keeper, pendingbonds[keeper][bonding]);
+        pendingbonds[keeper][bonding] = 0;
+        emit KeeperBonded(keeper, block.number, block.timestamp, bonds[keeper][bonding]);
     }
 
     /**
