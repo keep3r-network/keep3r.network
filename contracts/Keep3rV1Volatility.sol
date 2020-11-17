@@ -22,8 +22,9 @@ contract Keep3rV1Volatility {
     uint private constant BASE = 1e10;
 
     IKeep3rV1Oracle public constant KV1O = IKeep3rV1Oracle(0x73353801921417F465377c8d898c6f4C0270282C);
+    address public constant WETH = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
-    function floorLog2(uint256 _n) internal pure returns (uint8) {
+    function floorLog2(uint256 _n) public pure returns (uint8) {
         uint8 res = 0;
 
         if (_n < 256) {
@@ -45,7 +46,7 @@ contract Keep3rV1Volatility {
         return res;
     }
 
-    function ln(uint256 x) internal pure returns (uint) {
+    function ln(uint256 x) public pure returns (uint) {
         uint res = 0;
 
         // If x >= 2, then we compute the integer part of log2(x), which is larger than 0.
@@ -80,7 +81,7 @@ contract Keep3rV1Volatility {
      * - The exponentiation of the input is calculated by multiplying the intermediate results above
      * - For example: e^5.521692859 = e^(4 + 1 + 0.5 + 0.021692859) = e^4 * e^1 * e^0.5 * e^0.021692859
      */
-    function optimalExp(uint256 x) internal pure returns (uint256) {
+    function optimalExp(uint256 x) public pure returns (uint256) {
         uint256 res = 0;
 
         uint256 y;
@@ -146,12 +147,25 @@ contract Keep3rV1Volatility {
     }
 
     function quote(address tokenIn, address tokenOut, uint t) public view returns (uint call, uint put) {
-        uint price = KV1O.current(tokenIn, uint(10)**IERC20(tokenIn).decimals(), tokenOut);
-        return quotePrice(tokenIn, tokenOut, t, price, price);
+        uint _price = price(tokenIn, tokenOut);
+        return quotePrice(tokenIn, tokenIn == WETH ? tokenOut : WETH, t, _price, _price);
+    }
+
+    function price(address tokenIn, address tokenOut) public view returns (uint) {
+        if (tokenIn == WETH) {
+            return KV1O.current(WETH, 1e18, tokenOut);
+        } else {
+            uint _weth = KV1O.current(tokenIn, uint(10)**IERC20(tokenIn).decimals(), WETH);
+            if (tokenOut == WETH) {
+                return _weth;
+            } else {
+                return KV1O.current(WETH, _weth, tokenOut);
+            }
+        }
     }
 
     function quotePrice(address tokenIn, address tokenOut, uint t, uint sp, uint st) public view returns (uint call, uint put) {
-        uint v = rVol(tokenIn, tokenOut, 48, 2);
+        uint v = rVol(tokenIn, tokenOut, 4, 24);
         return quoteAll(t, v, sp, st);
     }
 
@@ -185,12 +199,12 @@ contract Keep3rV1Volatility {
         uint d2 = d1 - sSQRT;
 
         uint cdfD1 = ncdf(FIXED_1 * d1 / 1e18);
-        uint cdfD2 = ncdf(FIXED_1 * d2 / 1e18);
+        uint cdfD2 = cdf(int(FIXED_1) * int(d2) / 1e18);
 
         return sp * cdfD1 / 1e14 - st * cdfD2 / 1e14;
 	}
 
-    function ncdf(uint x) internal pure returns (uint) {
+    function ncdf(uint x) public pure returns (uint) {
         int t1 = int(1e7 + (2315419 * x / FIXED_1));
         uint exp = x / 2 * x / FIXED_1;
         int d = int(3989423 * FIXED_1 / optimalExp(uint(exp)));
@@ -199,7 +213,26 @@ contract Keep3rV1Volatility {
         return prob;
     }
 
-    function generalLog(uint256 x) internal pure returns (uint) {
+    /**
+     * @notice Takes the absolute value of a given number
+     * @dev Helper function
+     * @param _number The specified number
+     * @return The absolute value of the number
+     */
+    function abs(int256 _number) public pure returns (uint256) {
+        return _number < 0 ? uint256(_number * (-1)) : uint256(_number);
+    }
+
+    function cdf(int x) public pure returns (uint) {
+        int t1 = int(1e7 + int(2315419 * abs(x) / FIXED_1));
+        uint exp = uint(x / 2 * x) / FIXED_1;
+        int d = int(3989423 * FIXED_1 / optimalExp(uint(exp)));
+        uint prob = uint(d * (3193815 + ( -3565638 + (17814780 + (-18212560 + 13302740 * 1e7 / t1) * 1e7 / t1) * 1e7 / t1) * 1e7 / t1) * 1e7 / t1);
+        if( x > 0 ) prob = 1e14 - prob;
+        return prob;
+    }
+
+    function generalLog(uint256 x) public pure returns (uint) {
         uint res = 0;
 
         // If x >= 2, then we compute the integer part of log2(x), which is larger than 0.
@@ -223,7 +256,7 @@ contract Keep3rV1Volatility {
         return res * LOG_10_2 / BASE;
     }
 
-    function sqrt(uint x) internal pure returns (uint y) {
+    function sqrt(uint x) public pure returns (uint y) {
         uint z = (x + 1) / 2;
         y = x;
         while (z < y) {
