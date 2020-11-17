@@ -609,6 +609,27 @@ interface IBZx {
             address seizedToken
         );
 
+    /// @dev liquidates unhealty loans by using Gas token
+    /// @param loanId id of the loan
+    /// @param receiver address receiving liquidated loan collateral
+    /// @param gasTokenUser user address of the GAS token
+    /// @param closeAmount amount to close denominated in loanToken
+    /// @return loanCloseAmount loan close amount
+    /// @return seizedAmount loan token withdraw amount
+    /// @return seizedToken loan token address
+    function liquidateWithGasToken(
+        bytes32 loanId,
+        address receiver,
+        address gasTokenUser,
+        uint256 closeAmount) // denominated in loanToken
+        external
+        payable
+        returns (
+            uint256 loanCloseAmount,
+            uint256 seizedAmount,
+            address seizedToken);
+
+
     /// @dev get current active loans in the system
     /// @param start of the index
     /// @param count number of loans to return
@@ -645,8 +666,8 @@ interface IBZx {
         uint256 maxLoanTerm; // maximum term of the loan
         uint256 maxLiquidatable; // is the collateral you can get liquidating
         uint256 maxSeizable; // is the loan you available for liquidation
-        uint256 depositValue; // value of loan opening deposit
-        uint256 withdrawalValue; // value of loan closing withdrawal
+        uint256 depositValueAsLoanToken; // net value of deposit denominated as loanToken
+        uint256 depositValueAsCollateralToken; // net value of deposit denominated as collateralToken
     }
 }
 
@@ -772,7 +793,7 @@ contract BzxLiquidate is Ownable {
         address iToken
     ) external returns (bytes memory) {
         (uint256 _liquidatedLoanAmount, uint256 _liquidatedCollateral, ) = BZX
-            .liquidate(loanId, address(this), uint256(-1));
+            .liquidateWithGasToken(loanId, address(this), address(this), uint256(-1));
 
         require(_liquidatedCollateral > 0, "Liq is zero");
 
