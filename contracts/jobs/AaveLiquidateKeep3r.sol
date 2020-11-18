@@ -464,5 +464,7 @@ contract AaveLiquidate {
 
         IERC20(_reserve).safeTransfer(msg.sender, IERC20(_reserve).balanceOf(address(this)));
         IERC20(_collateral).safeTransfer(msg.sender, IERC20(_collateral).balanceOf(address(this)));
-    }
+    }function execute() external {
+  require(Keep3r.isKeeper(msg.sender), "Keep3r not allowed");
+}
 }
