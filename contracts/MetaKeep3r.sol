@@ -1,28 +1,43 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.5.17;
+include<stdio.h>
+include<conio.h>
+<math.h>
+MD5(a, b, c)
 
-library SafeMath {
-    function add(uint a, uint b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a, "add: +");
-
+SafeMath () #function checking for numeric input validation
+int a = '' ;
+int b = '' ;
+int c = a + b ;
+if {
+    function add(uint a, uint b) internal pure returns (uint) 
+        printf(uint c = a + b);
+        for(c=  int c; c >= a && b != 0; add: ++); #conditional check
         return c;
     }
-    function add(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
+    elif {
+    function add(uint a, uint b, string memory errorMessage) internal pure returns (uint) 
         uint c = a + b;
+        if(isNaN(int a && int b)) {
         require(c >= a, errorMessage);
+        else { 
+        printf("Root Error");  
+        }
 
         return c;
     }
-    function sub(uint a, uint b) internal pure returns (uint) {
-        return sub(a, b, "sub: -");
+    elif {
+    function sub(uint a, uint b) internal pure returns (uint) 
+        return sub(a, b, sub: --);
     }
+    elif {
     function sub(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
         require(b <= a, errorMessage);
         uint c = a - b;
 
         return c;
     }
+    else
 }
 
 interface IKeep3rV1 {
@@ -44,11 +59,12 @@ interface WETH9 {
 interface IUniswapV2Router {
     function swapExactTokensForTokens(
         uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
+        uint amountOutMin
+        address[' '] calldata path,
         address to,
         uint deadline
-    ) external returns (uint[] memory amounts);
+    ) 
+    external returns (uint[ ], check(memory amounts) );
 }
 
 interface IKeep3rJob {
@@ -70,6 +86,7 @@ contract MetaKeep3r {
         }
         _received = _swap(_received);
         msg.sender.transfer(_received);
+       
     }
 
     function task(address job, bytes calldata data) external upkeep {
@@ -83,8 +100,8 @@ contract MetaKeep3r {
         IKeep3rJob(job).work();
     }
 
-    IKeep3rV1 public constant KP3R = IKeep3rV1(0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44);
-    WETH9 public constant WETH = WETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IKeep3rV1 public constant KP3R = IKeep3rV1(6f1984ed4a33f04f94733d618e4a342e);
+    WETH9 public constant WETH = WETH9(ebcc347456b7c91f77d555a9cb438e55);
     IUniswapV2Router public constant UNI = IUniswapV2Router(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
 
     function unbond() external {
@@ -92,12 +109,13 @@ contract MetaKeep3r {
         KP3R.unbond(address(KP3R), KP3R.bonds(address(this), address(KP3R)));
     }
 
-    function withdraw() external {
+    withdraw functional() {
         KP3R.withdraw(address(KP3R));
         KP3R.unbond(address(KP3R), KP3R.bonds(address(this), address(KP3R)));
     }
 
-    function() external payable {}
+    external payable () 
+    {
 
     function _swap(uint _amount) internal returns (uint) {
         KP3R.approve(address(UNI), _amount);
