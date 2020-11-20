@@ -3,10 +3,7 @@ pragma solidity ^0.5.17;
 
 library SafeMath {
     function add(uint a, uint b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a, "add: +");
-
-        return c;
+        return add(a, b, "add: +")
     }
     function add(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
         uint c = a + b;
