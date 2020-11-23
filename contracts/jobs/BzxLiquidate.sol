@@ -793,7 +793,7 @@ contract BzxLiquidate is Ownable {
         address iToken
     ) external returns (bytes memory) {
         (uint256 _liquidatedLoanAmount, uint256 _liquidatedCollateral, ) = BZX
-            .liquidateWithGasToken(loanId, address(this), address(this), uint256(-1));
+            .liquidateWithGasToken(loanId, address(this), msg.sender, uint256(-1));
 
         require(_liquidatedCollateral > 0, "Liq is zero");
 
