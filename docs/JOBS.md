@@ -64,7 +64,7 @@ Step 1 is to provide LP tokens as credit. You receive all your LP tokens back wh
 function addLiquidityToJob(address liquidity, address job, uint amount) external
 ```
 
-Wait ```LIQUIDITYBOND``` (default 2 days) days.
+Wait ```LIQUIDITYBOND``` (default 3 days) days.
 
 ```
 /**
