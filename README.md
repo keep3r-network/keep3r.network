@@ -1,8 +1,6 @@
 # Introduction to Keep3r Network
 
-{% hint style="info" %}
-These docs are in active development by the Keep3r community.
-{% endhint %}
+_These docs are in active development by the Keep3r community._
 
 Keep3r Network is a decentralized keeper network for projects that need external devops and for external teams to find keeper jobs
 
@@ -41,7 +39,7 @@ For no, or low risk executions, you can simply call ```Keep3r.isKeeper(msg.sende
 For high, sensitive, or critical risk executions, you can specify a minimum bond, minimum jobs completed, and minimum Keeper age required to execute this function. Based on these 3 limits you can define your own trust ratio on these keepers.
 
 So a function definition would look as follows;
-```
+```solidity
 function execute() external {
   require(Keep3r.isKeeper(msg.sender), "Keep3r not allowed");
 }
@@ -51,7 +49,7 @@ At the end of the call, you simply need to call ```workReceipt(address,uint)``` 
 
 Example Keep3rJob
 
-```
+```solidity
 interface UniOracleFactory {
     function update(address tokenA, address tokenB) external;
 }
