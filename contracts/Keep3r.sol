@@ -864,7 +864,7 @@ contract Keep3rV1 is ReentrancyGuard {
      * @param amount the amount of credit being added to the job
      */
     function addCredit(address credit, address job, uint amount) external nonReentrant {
-        require(jobs[job], "addCreditETH: !job");
+        require(jobs[job], "addCredit: !job");
         uint _before = IERC20(credit).balanceOf(address(this));
         IERC20(credit).safeTransferFrom(msg.sender, address(this), amount);
         uint _received = IERC20(credit).balanceOf(address(this)).sub(_before);
