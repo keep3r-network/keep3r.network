@@ -18,6 +18,10 @@ const kp3r_v1_oracle = "0x73353801921417F465377c8d898c6f4C0270282C";
 const kp3r_eth_unilp = "0x87febfb3ac5791034fd5ef1a615e9d9627c2665d";
 const kp3rV1Oracle = new ethers.Contract(kp3r_v1_oracle, kp3r_v1_oracle_abi, w);
 
+const yield_comp_strat_abi = '[{"inputs":[],"name":"getCompAccrued","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}]';
+const yield_token_strat_abi = '[{"inputs":[],"name":"getHarvestable","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}]';
+const compToken = "0xc00e94Cb662C3520282E6f5717214004A7f26888";
+
 async function kp3r() {
 
     await kp3rWorkEarn();
@@ -52,7 +56,30 @@ async function kp3rWorkEarn() {
     }).catch(console.error);
 }
 
+// workaround to avoid oracle feed out-of-sync 
+async function underlyingHarvestable(_strategy) {
+    let yieldToken = await mmKp3rV2.stratagyYieldTokens(_strategy);
+	let yieldTokenRequired = await mmKp3rV2.stratagyYieldTokenOracles(_strategy);
+	let yieldTokenAmount = 0;
+	if (yieldToken == compToken){
+		let compStrat = new ethers.Contract(_strategy, yield_comp_strat_abi, w);
+		yieldTokenAmount = await compStrat.callStatic.getCompAccrued();
+	} else {
+		let tokenStrat = new ethers.Contract(_strategy, yield_token_strat_abi, w);
+		yieldTokenAmount = await tokenStrat.callStatic.getHarvestable();		
+	}
+	
+	console.log("requried:" + yieldTokenRequired + ", harvestable:" + yieldTokenAmount);
+    return (yieldTokenAmount > yieldTokenRequired? true : false);
+}
+
 async function kp3rv2Harvestable(_contract, _strategy) {
+    // only allow harvest invocation if underlying check pass
+    let underlying = await underlyingHarvestable(_strategy);    
+    if (!underlying){
+        return;   
+    }
+    
     // check if kp3r v1 oracle is valid for kp3r-eth pair
     let blkNum = await provider.getBlockNumber();
     let blk = await provider.getBlock(blkNum);
