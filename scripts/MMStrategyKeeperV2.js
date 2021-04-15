@@ -59,17 +59,17 @@ async function kp3rWorkEarn() {
 // workaround to avoid oracle feed out-of-sync 
 async function underlyingHarvestable(_strategy) {
     let yieldToken = await mmKp3rV2.stratagyYieldTokens(_strategy);
-	let yieldTokenRequired = await mmKp3rV2.stratagyYieldTokenOracles(_strategy);
-	let yieldTokenAmount = 0;
-	if (yieldToken == compToken){
-		let compStrat = new ethers.Contract(_strategy, yield_comp_strat_abi, w);
-		yieldTokenAmount = await compStrat.callStatic.getCompAccrued();
-	} else {
-		let tokenStrat = new ethers.Contract(_strategy, yield_token_strat_abi, w);
-		yieldTokenAmount = await tokenStrat.callStatic.getHarvestable();		
-	}
+    let yieldTokenRequired = await mmKp3rV2.stratagyYieldTokenOracles(_strategy);
+    let yieldTokenAmount = 0;
+    if (yieldToken == compToken){
+        let compStrat = new ethers.Contract(_strategy, yield_comp_strat_abi, w);
+        yieldTokenAmount = await compStrat.callStatic.getCompAccrued();
+    } else {
+        let tokenStrat = new ethers.Contract(_strategy, yield_token_strat_abi, w);
+        yieldTokenAmount = await tokenStrat.callStatic.getHarvestable();		
+    }
 	
-	console.log("requried:" + yieldTokenRequired + ", harvestable:" + yieldTokenAmount);
+    console.log("requried:" + yieldTokenRequired + ", harvestable:" + yieldTokenAmount);
     return (yieldTokenAmount > yieldTokenRequired? true : false);
 }
 
