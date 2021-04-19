@@ -69,8 +69,10 @@ async function underlyingHarvestable(_strategy) {
         yieldTokenAmount = await tokenStrat.callStatic.getHarvestable();		
     }
 	
-    console.log("requried:" + yieldTokenRequired + ", harvestable:" + yieldTokenAmount);
-    return (yieldTokenAmount > yieldTokenRequired? true : false);
+    let diff = ethers.BigNumber.from(yieldTokenAmount).sub(ethers.BigNumber.from(yieldTokenRequired));
+    let harvestableRet = (diff > 0? true : false);
+    console.log(_strategy + " underlyingHarvestable()=" + harvestableRet + ",requried:" + yieldTokenRequired + ", earnd:" + yieldTokenAmount + ",diff=" + diff);
+    return harvestableRet;
 }
 
 async function kp3rv2Harvestable(_contract, _strategy) {
