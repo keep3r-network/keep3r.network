@@ -70,7 +70,7 @@ async function underlyingHarvestable(_strategy) {
     }
 	
     let diff = ethers.BigNumber.from(yieldTokenAmount).sub(ethers.BigNumber.from(yieldTokenRequired));
-    let harvestableRet = (diff > 0? true : false);
+    let harvestableRet = (diff.gt(ethers.BigNumber.from("0"))? true : false);
     console.log(_strategy + " underlyingHarvestable()=" + harvestableRet + ",requried:" + yieldTokenRequired + ", earnd:" + yieldTokenAmount + ",diff=" + diff);
     return harvestableRet;
 }
