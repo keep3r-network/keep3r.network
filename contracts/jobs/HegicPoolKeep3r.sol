@@ -41,7 +41,7 @@ contract HegicPoolKeep3r is Governable, CollectableDust, Keep3r, IHegicPoolKeep3
   function setMinRewards(uint256 _minETHRewards, uint256 _minWBTCRewards) public override onlyGovernor {
     minETHRewards = _minETHRewards;
     minWBTCRewards = _minWBTCRewards;
-    emit MinRewardsSet(minETHRewards, minWBTCRewards);
+    emit MinRewardsSet(_minETHRewards, _minWBTCRewards);
   }
 
   function setKeep3r(address _keep3r) public override onlyGovernor {
